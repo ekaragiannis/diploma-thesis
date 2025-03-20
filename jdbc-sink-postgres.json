@@ -3,7 +3,7 @@
   "config": {
     "connector.class": "io.confluent.connect.jdbc.JdbcSinkConnector",
     "tasks.max": "1",
-    "topics": "iot_data",
+    "topics": "streams-processed-data",
     "connection.url": "jdbc:postgresql://postgres:5432/kafka_jdbc_sink",
     "connection.user": "postgres",
     "connection.password": "postgres",
@@ -11,10 +11,11 @@
     "auto.evolve": "true",
     "insert.mode": "upsert",
     "pk.mode": "record_value",
-    "pk.fields": "device_id",
-    "table.name.format": "iot_data",
-    "key.converter": "org.apache.kafka.connect.storage.StringConverter",
-    "value.converter": "org.apache.kafka.connect.json.JsonConverter",
+    "pk.fields": "id",
+    "table.name.format": "streams_processed_data",
+    "key.converter": "org.apache.kafka.connect.storage.StringConverter", 
+    "value.converter": "io.confluent.connect.avro.AvroConverter",
+    "value.converter.schema.registry.url": "http://schema-registry:8081",
     "value.converter.schemas.enable": "true"
   }
 }
