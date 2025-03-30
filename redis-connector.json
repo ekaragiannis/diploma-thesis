@@ -1,0 +1,13 @@
+{
+  "name": "redis-sink-connector",
+  "config": {
+    "connector.class": "com.redis.kafka.connect.RedisSinkConnector",
+    "tasks.max": "1",
+    "topics": "streams-processed-data",
+    "redis.uri": "redis://redis:6379",
+    "redis.command": "HSET",
+    "key.converter": "org.apache.kafka.connect.storage.StringConverter",
+    "value.converter": "io.confluent.connect.avro.AvroConverter",
+    "value.converter.schema.registry.url": "http://schema-registry:8081"
+  }
+}
