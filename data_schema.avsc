@@ -1,0 +1,9 @@
+{
+  "type": "record",
+  "name": "SensorReading",
+  "fields": [
+    { "name": "id", "type": "int" },
+    { "name": "temperature", "type": "int" }
+  ]
+}
+
