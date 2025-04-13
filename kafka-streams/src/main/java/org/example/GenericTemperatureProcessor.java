@@ -34,7 +34,6 @@ public class GenericTemperatureProcessor {
     public static void main(String[] args) {
         final Schema schema = createTemperatureSchema();
         Properties props = configureProperties();
-        System.out.println(props);
 
         final Map<String, String> serdeConfig = Collections.singletonMap(
                 "schema.registry.url", props.getProperty("schema.registry.url"));
@@ -42,11 +41,9 @@ public class GenericTemperatureProcessor {
         final StreamsBuilder builder = new StreamsBuilder();
         final ObjectMapper objectMapper = new ObjectMapper();
 
-        // Avro Serde Setup
         final GenericAvroSerde avroSerde = new GenericAvroSerde();
         avroSerde.configure(serdeConfig, false);
 
-        // ✅ Consume JSON messages and convert them into Avro format
         builder.stream(TOPIC_SOURCE, Consumed.with(Serdes.String(), Serdes.String()))
                 .map((key, value) -> fahrenheitToCelsius(value, schema, objectMapper))
                 .to(TOPIC_TARGET, Produced.with(Serdes.String(), avroSerde));
@@ -82,21 +79,16 @@ public class GenericTemperatureProcessor {
         try {
             JsonNode jsonNode = objectMapper.readTree(jsonString);
 
-            // Extract `id` as the Kafka key
             String key = jsonNode.get("id").asText();
 
-            // Create a new Avro record
             GenericRecord newValue = new GenericData.Record(schema);
             newValue.put("id", jsonNode.get("id").asInt());
 
-            // Convert Fahrenheit to Celsius
             double fahrenheit = jsonNode.get("temperature").asDouble();
-            float celsius = (float) ((fahrenheit - 32) * 5 / 9);
+            double celsius = ((fahrenheit - 32) * 5 / 9);
             newValue.put("temperature", celsius);
 
-            KeyValue<String, GenericRecord> pair = KeyValue.pair(key, newValue);
-            System.out.println(pair);
-            return pair;
+            return KeyValue.pair(key, newValue);
         } catch (JsonProcessingException e) {
             throw new RuntimeException("Error processing JSON: " + jsonString, e);
         }
