@@ -40,7 +40,7 @@ services:
     depends_on:
       - broker
       - schema-registry
-      - postgres
+      - timescale
       - redis
     environment:
       CONNECT_BOOTSTRAP_SERVERS: 'broker:29092'
@@ -93,17 +93,17 @@ services:
       KAFKA_REST_LISTENERS: "http://0.0.0.0:8082"
       KAFKA_REST_SCHEMA_REGISTRY_URL: "http://schema-registry:8081"
 
-  postgres:
-    image: postgres:latest
-    container_name: postgres
+  timescale:
+    image: timescale/timescaledb-ha:pg17
+    container_name: timescale
     ports:
       - "5432:5432"
     environment:
-      POSTGRES_DB: kafka_jdbc_sink
+      POSTGRES_DB: postgres
       POSTGRES_USER: postgres
-      POSTGRES_PASSWORD: postgres
+      POSTGRES_PASSWORD: 1234
     volumes:
-      - postgres_data:/var/lib/postgresql/data
+      - timescale_data:/home/postgres/pgdata/data
     healthcheck:
       test: [ "CMD-SHELL", "pg_isready -U postgres" ]
       interval: 10s
@@ -136,5 +136,5 @@ services:
       SCHEMA_REGISTRY_URL: "http://schema-registry:8081"
 
 volumes:
-  postgres_data:
+  timescale_data:
   redis_data:

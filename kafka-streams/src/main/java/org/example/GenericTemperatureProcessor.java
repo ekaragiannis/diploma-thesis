@@ -34,7 +34,7 @@ import java.util.concurrent.ExecutionException;
  */
 public class GenericTemperatureProcessor {
     private static final String TOPIC_SOURCE = "raw-data";
-    private static final String TOPIC_TARGET = "streams-processed-data";
+    private static final String TOPIC_TARGET = "sensors-data";
     private static final String APP_ID = "temperature-processor";
 
     public static void main(String[] args) {
