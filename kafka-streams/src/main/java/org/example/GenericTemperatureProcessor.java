@@ -8,6 +8,10 @@ import org.apache.avro.Schema;
 import org.apache.avro.SchemaBuilder;
 import org.apache.avro.generic.GenericData;
 import org.apache.avro.generic.GenericRecord;
+import org.apache.kafka.clients.admin.AdminClient;
+import org.apache.kafka.clients.admin.CreateTopicsResult;
+import org.apache.kafka.clients.admin.NewTopic;
+import org.apache.kafka.common.errors.TopicExistsException;
 import org.apache.kafka.common.serialization.Serdes;
 import org.apache.kafka.streams.KafkaStreams;
 import org.apache.kafka.streams.KeyValue;
@@ -16,10 +20,12 @@ import org.apache.kafka.streams.StreamsConfig;
 import org.apache.kafka.streams.kstream.Consumed;
 import org.apache.kafka.streams.kstream.Produced;
 
+import java.util.Arrays;
 import java.util.Collections;
 import java.util.Map;
 import java.util.Properties;
 import java.util.concurrent.CountDownLatch;
+import java.util.concurrent.ExecutionException;
 
 /**
  * A Kafka Streams application that processes temperature data from JSON to Avro
@@ -34,6 +40,8 @@ public class GenericTemperatureProcessor {
     public static void main(String[] args) {
         final Schema schema = createTemperatureSchema();
         Properties props = configureProperties();
+
+        createTopicsIfMissing(props);
 
         final Map<String, String> serdeConfig = Collections.singletonMap(
                 "schema.registry.url", props.getProperty("schema.registry.url"));
@@ -91,6 +99,30 @@ public class GenericTemperatureProcessor {
             return KeyValue.pair(key, newValue);
         } catch (JsonProcessingException e) {
             throw new RuntimeException("Error processing JSON: " + jsonString, e);
+        }
+    }
+
+    private static void createTopicsIfMissing(Properties props) {
+        try (AdminClient adminClient = AdminClient.create(props)) {
+            int partitions = 3;
+            short replicationFactor = 1;
+
+            NewTopic rawTopic = new NewTopic(TOPIC_SOURCE, partitions, replicationFactor);
+            NewTopic processedTopic = new NewTopic(TOPIC_TARGET, partitions, replicationFactor);
+
+            CreateTopicsResult result = adminClient.createTopics(
+                    Arrays.asList(rawTopic, processedTopic));
+
+            result.all().get(); // wait for completion
+            System.out.println("Topics created or already exist.");
+        } catch (ExecutionException e) {
+            if (e.getCause() instanceof TopicExistsException) {
+                System.out.println("Some topics already exist, skipping...");
+            } else {
+                throw new RuntimeException("Failed to create Kafka topics", e);
+            }
+        } catch (Exception e) {
+            throw new RuntimeException("Error in topic creation", e);
         }
     }
 
