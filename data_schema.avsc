@@ -1,9 +1,9 @@
 {
   "type": "record",
-  "name": "SensorReading",
+  "name": "SensorsData",
   "fields": [
-    { "name": "id", "type": "int" },
-    { "name": "temperature", "type": "int" }
+    { "name": "device_id", "type": "int" },
+    { "name": "temperature", "type": "float" },
+    { "name": "time", "type": { "type": "long", "logicalType": "timestamp-millis" } }
   ]
 }
-

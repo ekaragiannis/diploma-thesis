@@ -1,0 +1,24 @@
+{
+  "name": "debezium-source-connector",
+  "config": {
+    "connector.class": "io.debezium.connector.postgresql.PostgresConnector",
+    "tasks.max": "1",
+    "database.hostname": "timescaledb",
+    "database.port": "5432",
+    "database.user": "postgres",
+    "database.password": "1234",
+    "database.dbname": "postgres",
+    "topic.prefix": "cdc",
+    "plugin.name": "pgoutput",
+    "schema.include.list": "_timescaledb_internal,public.sensors_data",
+    "key.converter": "org.apache.kafka.connect.json.JsonConverter",
+    "value.converter": "org.apache.kafka.connect.json.JsonConverter",
+    "transforms": "timescaledb",
+    "transforms.timescaledb.type": "io.debezium.connector.postgresql.transforms.timescaledb.TimescaleDb",
+    "transforms.timescaledb.database.hostname": "timescaledb",
+    "transforms.timescaledb.database.port": "5432",
+    "transforms.timescaledb.database.user": "postgres",
+    "transforms.timescaledb.database.password": "1234",
+    "transforms.timescaledb.database.dbname": "postgres"
+  }
+}

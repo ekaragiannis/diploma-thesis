@@ -1,9 +1,14 @@
 package org.example;
 
-import com.fasterxml.jackson.core.JsonProcessingException;
-import com.fasterxml.jackson.databind.JsonNode;
-import com.fasterxml.jackson.databind.ObjectMapper;
-import io.confluent.kafka.streams.serdes.avro.GenericAvroSerde;
+import java.time.Instant;
+import java.util.Arrays;
+import java.util.Collections;
+import java.util.Map;
+import java.util.Properties;
+import java.util.concurrent.CountDownLatch;
+import java.util.concurrent.ExecutionException;
+
+import org.apache.avro.LogicalTypes;
 import org.apache.avro.Schema;
 import org.apache.avro.SchemaBuilder;
 import org.apache.avro.generic.GenericData;
@@ -20,17 +25,14 @@ import org.apache.kafka.streams.StreamsConfig;
 import org.apache.kafka.streams.kstream.Consumed;
 import org.apache.kafka.streams.kstream.Produced;
 
-import java.util.Arrays;
-import java.util.Collections;
-import java.util.Map;
-import java.util.Properties;
-import java.util.concurrent.CountDownLatch;
-import java.util.concurrent.ExecutionException;
+import com.fasterxml.jackson.databind.JsonNode;
+import com.fasterxml.jackson.databind.ObjectMapper;
+
+import io.confluent.kafka.streams.serdes.avro.GenericAvroSerde;
 
 /**
- * A Kafka Streams application that processes temperature data from JSON to Avro
- * format,
- * converting Fahrenheit to Celsius in the process.
+ * A Kafka Streams application that processes temperature data from JSON
+ * to Avro format, converting Fahrenheit to Celsius in the process.
  */
 public class GenericTemperatureProcessor {
     private static final String TOPIC_SOURCE = "raw-data";
@@ -54,6 +56,7 @@ public class GenericTemperatureProcessor {
 
         builder.stream(TOPIC_SOURCE, Consumed.with(Serdes.String(), Serdes.String()))
                 .map((key, value) -> fahrenheitToCelsius(value, schema, objectMapper))
+                .filter((key, value) -> value != null)
                 .to(TOPIC_TARGET, Produced.with(Serdes.String(), avroSerde));
 
         runStreamsApplication(builder, props);
@@ -61,11 +64,13 @@ public class GenericTemperatureProcessor {
 
     private static Schema createTemperatureSchema() {
         return SchemaBuilder
-                .record("Temperature")
+                .record("SensorsData")
                 .namespace("com.example.kafkastreams")
                 .fields()
-                .name("id").type().intType().noDefault()
+                .name("device_id").type().intType().noDefault()
                 .name("temperature").type().floatType().noDefault()
+                .name("time").type(LogicalTypes.timestampMillis().addToSchema(Schema.create(Schema.Type.LONG)))
+                .noDefault()
                 .endRecord();
     }
 
@@ -83,22 +88,30 @@ public class GenericTemperatureProcessor {
 
     private static KeyValue<String, GenericRecord> fahrenheitToCelsius(
             String jsonString, Schema schema, ObjectMapper objectMapper) {
+
         System.out.println("Processing JSON: " + jsonString);
         try {
             JsonNode jsonNode = objectMapper.readTree(jsonString);
 
-            String key = jsonNode.get("id").asText();
+            if (jsonNode.get("temperature") == null || jsonNode.get("device_id") == null) {
+                System.err.println("Skipping bad record (missing fields): " + jsonString);
+                return null;
+            }
 
+            String key = jsonNode.get("device_id").asText();
             GenericRecord newValue = new GenericData.Record(schema);
-            newValue.put("id", jsonNode.get("id").asInt());
 
             double fahrenheit = jsonNode.get("temperature").asDouble();
             double celsius = ((fahrenheit - 32) * 5 / 9);
+
+            newValue.put("device_id", jsonNode.get("device_id").asInt());
             newValue.put("temperature", celsius);
+            newValue.put("time", Instant.now().toEpochMilli());
 
             return KeyValue.pair(key, newValue);
-        } catch (JsonProcessingException e) {
-            throw new RuntimeException("Error processing JSON: " + jsonString, e);
+        } catch (Exception e) {
+            System.err.println("Skipping malformed JSON: " + jsonString);
+            return null;
         }
     }
 
