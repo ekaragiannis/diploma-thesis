@@ -10,7 +10,7 @@
     "database.dbname": "postgres",
     "topic.prefix": "cdc",
     "plugin.name": "pgoutput",
-    "schema.include.list": "_timescaledb_internal,public.sensors_data",
+    "schema.include.list": "public.hourly_data",
     "key.converter": "org.apache.kafka.connect.json.JsonConverter",
     "value.converter": "org.apache.kafka.connect.json.JsonConverter",
     "transforms": "timescaledb",
@@ -19,6 +19,7 @@
     "transforms.timescaledb.database.port": "5432",
     "transforms.timescaledb.database.user": "postgres",
     "transforms.timescaledb.database.password": "1234",
-    "transforms.timescaledb.database.dbname": "postgres"
+    "transforms.timescaledb.database.dbname": "postgres",
+    "target.topic.prefix": "cdc"
   }
 }
