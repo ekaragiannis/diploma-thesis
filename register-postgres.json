@@ -8,18 +8,16 @@
     "database.user": "postgres",
     "database.password": "1234",
     "database.dbname": "postgres",
-    "topic.prefix": "cdc",
+    "topic.prefix": "timescaledb",
     "plugin.name": "pgoutput",
-    "schema.include.list": "public.hourly_data",
-    "key.converter": "org.apache.kafka.connect.json.JsonConverter",
-    "value.converter": "org.apache.kafka.connect.json.JsonConverter",
+    "schema.include.list": "_timescaledb_internal",
+    "table.exclude.list": "_timescaledb_internal._hyper_1_1_chunk",
     "transforms": "timescaledb",
     "transforms.timescaledb.type": "io.debezium.connector.postgresql.transforms.timescaledb.TimescaleDb",
     "transforms.timescaledb.database.hostname": "timescaledb",
     "transforms.timescaledb.database.port": "5432",
     "transforms.timescaledb.database.user": "postgres",
     "transforms.timescaledb.database.password": "1234",
-    "transforms.timescaledb.database.dbname": "postgres",
-    "target.topic.prefix": "cdc"
+    "transforms.timescaledb.database.dbname": "postgres"
   }
 }
