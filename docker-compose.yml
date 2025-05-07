@@ -131,14 +131,18 @@ services:
       retries: 5
 
   redis:
-    image: redis:latest
+    image: redis/redis-stack:latest
     container_name: redis
     ports:
       - "6379:6379"
+      - "8001:8001"
     volumes:
       - redis_data:/data
     healthcheck:
       test: [ "CMD", "redis-cli", "ping" ]
+      interval: 10s
+      timeout: 5s
+      retries: 5
 
   kafka-streams:
     image: kafka-streams
@@ -155,6 +159,28 @@ services:
     environment:
       KAFKA_BOOTSTRAP_SERVERS: "broker:29092"
       SCHEMA_REGISTRY_URL: "http://schema-registry:8081"
+
+  ksqldb-server:
+    image: confluentinc/ksqldb-server
+    container_name: ksqldb-server
+    depends_on:
+      - broker
+      - schema-registry
+    ports:
+      - "8088:8088"
+    environment:
+      KSQL_BOOTSTRAP_SERVERS: "broker:29092"
+      KSQL_LISTENERS: "http://0.0.0.0:8088"
+      KSQL_KSQL_SCHEMA_REGISTRY_URL: "http://schema-registry:8081"
+      KSQL_KSQL_SERVICE_ID: "ksql_service_"
+
+  ksqldb-cli:
+    container_name: ksqldb-cli
+    image: confluentinc/ksqldb-cli
+    depends_on:
+      - ksqldb-server
+    entrypoint: /bin/sh
+    tty: true
 
 volumes:
   timescale_data:
