@@ -1,0 +1,25 @@
+SET 'auto.offset.reset' = 'earliest';
+
+CREATE STREAM hourly_data 
+WITH (
+  KAFKA_TOPIC='timescaledb.public.hourly_data',
+  VALUE_FORMAT='AVRO'
+);
+
+CREATE STREAM hourly_data_with_key
+WITH (
+  KAFKA_TOPIC = 'device-summary',
+  VALUE_FORMAT = 'AVRO',
+  KEY_FORMAT = 'KAFKA'
+) AS
+SELECT
+  after->device_id AS "device_id",
+  after->bucket AS "bucket",
+  after->avg_temp AS "avg_temp",
+  after->min_temp AS "min_temp",
+  after->max_temp AS "max_temp",
+  CAST(after->device_id AS STRING) + '_' + after->bucket AS "device_id_bucket"
+FROM hourly_data
+WHERE after IS NOT NULL
+PARTITION BY CAST(after->device_id AS STRING) + '_' + after->bucket 
+EMIT CHANGES;
