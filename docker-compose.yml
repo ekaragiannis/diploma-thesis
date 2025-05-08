@@ -144,21 +144,21 @@ services:
       timeout: 5s
       retries: 5
 
-  kafka-streams:
-    image: kafka-streams
-    build: ./kafka-streams
-    container_name: kafka-streams
-    restart: always
-    depends_on:
-      broker:
-        condition: service_healthy
-      connect:
-        condition: service_healthy
-      schema-registry:
-        condition: service_healthy
-    environment:
-      KAFKA_BOOTSTRAP_SERVERS: "broker:29092"
-      SCHEMA_REGISTRY_URL: "http://schema-registry:8081"
+  # kafka-streams:
+  #   image: kafka-streams
+  #   build: ./kafka-streams
+  #   container_name: kafka-streams
+  #   restart: always
+  #   depends_on:
+  #     broker:
+  #       condition: service_healthy
+  #     connect:
+  #       condition: service_healthy
+  #     schema-registry:
+  #       condition: service_healthy
+  #   environment:
+  #     KAFKA_BOOTSTRAP_SERVERS: "broker:29092"
+  #     SCHEMA_REGISTRY_URL: "http://schema-registry:8081"
 
   ksqldb-server:
     image: confluentinc/ksqldb-server
@@ -173,11 +173,14 @@ services:
       KSQL_LISTENERS: "http://0.0.0.0:8088"
       KSQL_KSQL_SCHEMA_REGISTRY_URL: "http://schema-registry:8081"
       KSQL_KSQL_SERVICE_ID: "ksql_service_"
+      KSQL_KSQL_STREAMS_AUTO_OFFSET_RESET: "earliest"
+      KSQL_KSQL_CONNECT_URL: "http://connect:8083"
 
   ksqldb-cli:
     container_name: ksqldb-cli
     image: confluentinc/ksqldb-cli
     depends_on:
+      - broker
       - ksqldb-server
     entrypoint: /bin/sh
     tty: true
