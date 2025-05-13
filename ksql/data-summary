@@ -4,19 +4,34 @@ WITH (
   VALUE_FORMAT='AVRO'
 );
 
-CREATE STREAM hourly_data_with_key
-WITH (
-  KAFKA_TOPIC = 'device-summary',
-  VALUE_FORMAT = 'AVRO',
-  KEY_FORMAT = 'KAFKA'
-) AS SELECT
-  after->device_id AS "device_id",
-  after->bucket AS "bucket",
-  after->avg_temp AS "avg_temp",
-  after->min_temp AS "min_temp",
-  after->max_temp AS "max_temp",
-  CAST(after->device_id AS STRING) + '_' + CAST(after->bucket AS STRING) AS "device_id_bucket"
+CREATE TABLE daily_device_summary WITH (
+  kafka_topic='redis-daily-summary',
+  value_format='AVRO'
+) AS
+SELECT
+  CAST(after->device_id AS STRING) + ':' + FORMAT_TIMESTAMP(FROM_UNIXTIME(after->bucket / 1000), 'yyyy-MM-dd') AS "redis_key",
+  AS_MAP(
+    COLLECT_LIST(FORMAT_TIMESTAMP(FROM_UNIXTIME(after->bucket / 1000), 'HH')),
+    COLLECT_LIST(ARRAY[after->avg_temp, after->max_temp, after->min_temp])
+  ) AS "data"
 FROM hourly_data
-WHERE after IS NOT NULL
-PARTITION BY CAST(after->device_id AS STRING) + '_' + CAST(after->bucket AS STRING) 
-EMIT CHANGES;
+WINDOW TUMBLING (SIZE 24 HOURS, RETENTION 25 HOURS, GRACE PERIOD 1 HOUR)
+GROUP BY CAST(after->device_id AS STRING) + ':' + FORMAT_TIMESTAMP(FROM_UNIXTIME(after->bucket / 1000), 'yyyy-MM-dd')
+EMIT FINAL;
+
+-- CREATE TABLE daily_device_summary WITH (
+--   kafka_topic='redis-daily-summary',
+--   value_format='AVRO'
+-- ) AS
+-- SELECT
+--   CAST(after->device_id AS STRING) + ':' + FORMAT_TIMESTAMP(FROM_UNIXTIME(after->bucket / 1000), 'yyyy-MM-dd') AS "redis_key",
+--   AS_MAP(
+--     COLLECT_LIST(
+--       FORMAT_TIMESTAMP(FROM_UNIXTIME(after->bucket / 1000), 'HH')
+--     ),
+--     COLLECT_LIST(ARRAY[after->avg_temp, after->max_temp, after->min_temp])
+--   ) AS "data"
+-- FROM hourly_data
+-- WINDOW TUMBLING (SIZE 5 MINUTES, GRACE PERIOD 1 MINUTE)
+-- GROUP BY CAST(after->device_id AS STRING) + ':' + FORMAT_TIMESTAMP(FROM_UNIXTIME(after->bucket / 1000), 'yyyy-MM-dd')
+-- EMIT FINAL;
