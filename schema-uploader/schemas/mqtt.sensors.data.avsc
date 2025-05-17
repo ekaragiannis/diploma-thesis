@@ -3,7 +3,6 @@
   "name": "TimescaleSensorsData",
   "fields": [
     { "name": "id", "type": "string" },
-    { "name": "value", "type": "float" },
-    { "name": "time", "type": { "type": "long", "logicalType": "timestamp-millis" } }
+    { "name": "value", "type": "float" }
   ]
 }

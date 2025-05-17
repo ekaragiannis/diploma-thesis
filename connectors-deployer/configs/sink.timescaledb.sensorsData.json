@@ -13,7 +13,6 @@
     "table.name.format": "sensors_data",
     "key.converter": "org.apache.kafka.connect.storage.StringConverter",
     "value.converter": "io.confluent.connect.avro.AvroConverter",
-    "value.converter.schema.registry.url": "http://schema-registry:8081",
-    "value.converter.schemas.enable": "true"
+    "value.converter.schema.registry.url": "http://schema-registry:8081"
   }
 }

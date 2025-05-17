@@ -1,26 +1,27 @@
+-- Necessary configuration for debezium to work
 CREATE PUBLICATION dbz_publication FOR ALL TABLES WITH (publish = 'insert, update');
 
 CREATE TABLE sensors_data (
-    device_id INT NOT NULL,
-    time TIMESTAMP NOT NULL,
-    temperature FLOAT
+    "id" TEXT NOT NULL,
+    "ts" TIMESTAMPTZ NOT NULL DEFAULT CURRENT_TIMESTAMP,
+    "value" FLOAT NOT NULL
 );
 
-SELECT create_hypertable('sensors_data', 'time');
+SELECT create_hypertable('sensors_data', 'ts');
 
-CREATE MATERIALIZED VIEW hourly_data
+CREATE MATERIALIZED VIEW agg_data
 WITH (timescaledb.continuous) AS
 SELECT
-    device_id,
-    time_bucket('1 hour', time) AS bucket,
-    AVG(temperature) AS avg_temp,
-    MAX(temperature) AS max_temp,
-    MIN(temperature) AS min_temp
-FROM sensors_data
-GROUP BY device_id, bucket;
+    time_bucket('1 hour', ts) AS bucket,
+    id,
+    SUM(value) AS avg_value
+FROM
+    sensors_data
+GROUP BY
+    bucket, id;
 
-SELECT add_continuous_aggregate_policy('hourly_data',
+
+SELECT add_continuous_aggregate_policy('agg_data',
     start_offset => INTERVAL '3 hours',
     end_offset   => INTERVAL '15 minutes',
     schedule_interval => INTERVAL '10 minutes');
-
