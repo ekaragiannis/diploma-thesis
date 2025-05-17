@@ -6,11 +6,11 @@ TOPIC1="mqtt.sensors.data"
 PARTITIONS1=3
 REPLICATION1=1
 
-TOPIC2="timescaledb.public.agg_data"
+TOPIC2="timescaledb.public.aggregatedData"
 PARTITIONS2=3
 REPLICATION2=1
 
-TOPIC3="redis.agg_data"
+TOPIC3="redis.aggregatedData"
 PARTITIONS3=3
 REPLICATION3=1
 

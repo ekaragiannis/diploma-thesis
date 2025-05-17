@@ -1,5 +1,5 @@
 {
-  "name": "sink.timescaledb.sensors_data",
+  "name": "sink.timescaledb.sensorsData",
   "config": {
     "connector.class": "io.confluent.connect.jdbc.JdbcSinkConnector",
     "tasks.max": "1",

@@ -4,9 +4,9 @@ set -e
 CONNECT_URL="http://connect:8083"
 CONFIGS_DIR="configs"
 
-CONNECTOR1="sink.timescaledb.sensors_data"
-CONNECTOR2="source.timescaledb.agg_data"
-CONNECTOR3="sink.redis.agg_data"
+CONNECTOR1="sink.timescaledb.sensorsData"
+CONNECTOR2="source.timescaledb.aggregatedData"
+CONNECTOR3="sink.redis.aggregatedData"
 
 echo "Deploying connectors..."
 

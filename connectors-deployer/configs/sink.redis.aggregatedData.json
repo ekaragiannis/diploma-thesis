@@ -1,5 +1,5 @@
 {
-  "name": "sink.redis.agg_data",
+  "name": "sink.redis.aggregatedData",
   "config": {
     "connector.class": "com.redis.kafka.connect.RedisSinkConnector",
     "tasks.max": "1",
