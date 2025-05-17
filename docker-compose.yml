@@ -185,21 +185,33 @@ services:
     entrypoint: /bin/sh
     tty: true
 
-  mqtt:
-    image: eclipse-mosquitto
-    container_name: mqtt
-    ports:
-      - "1883:1883"
-    volumes:
-      - ./mosquitto.conf:/mosquitto/config:ro
-      - mosquitto_data:/mosquitto/data:rw
-      - mosquitto_log:/mosquitto/log:rw
-    restart: unless-stopped
-    healthcheck:
-      test: [ "CMD-SHELL", "nc -z localhost 1883 || exit 1" ]
-      interval: 10s
-      timeout: 5s
-      retries: 5
+  # Setup container
+  topics-creator:
+    build:
+      context: .
+      dockerfile: topics-creator/Dockerfile
+    container_name: topics-creator
+    depends_on:
+      broker:
+        condition: service_healthy
+
+  connectors-deployer:
+    build:
+      context: .
+      dockerfile: connectors-deployer/Dockerfile
+    container_name: connectors-deployer
+    depends_on:
+      connect:
+        condition: service_healthy
+
+  schema-uploader:
+    build:
+      context: .
+      dockerfile: schema-uploader/Dockerfile
+    container_name: schema-uploader
+    depends_on:
+      schema-registry:
+        condition: service_healthy
 
 volumes:
   timescale_data:

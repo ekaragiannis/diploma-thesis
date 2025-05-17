@@ -1,5 +1,5 @@
 {
-  "name": "debezium-source-connector",
+  "name": "source.timescaledb.agg_data",
   "config": {
     "connector.class": "io.debezium.connector.postgresql.PostgresConnector",
     "tasks.max": "1",
