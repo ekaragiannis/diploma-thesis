@@ -33,8 +33,9 @@ services:
       retries: 5
 
   connect:
-    build: .
-    image: kafka-connect:latest
+    build:
+      context: .
+      dockerfile: connect/Dockerfile
     container_name: connect
     ports:
       - "8083:8083"
