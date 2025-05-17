@@ -21,7 +21,7 @@ upload_avro_schema() {
 
 }
 
-upload_avro_schema "mqtt.sensors.data"
+upload_avro_schema "mqtt.SensorsData"
 
 
 

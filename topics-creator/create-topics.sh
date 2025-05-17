@@ -2,15 +2,15 @@
 
 KAFKA_BOOTSTRAP="broker:29092"
 
-TOPIC1="mqtt.sensors.data"
+TOPIC1="mqtt.SensorsData"
 PARTITIONS1=3
 REPLICATION1=1
 
-TOPIC2="timescaledb.public.aggregatedData"
+TOPIC2="timescaledb.public.AggregatedData"
 PARTITIONS2=3
 REPLICATION2=1
 
-TOPIC3="redis.aggregatedData"
+TOPIC3="redis.AggregatedData"
 PARTITIONS3=3
 REPLICATION3=1
 
