@@ -12,16 +12,16 @@ SELECT create_hypertable('"SensorsData"', 'ts');
 CREATE MATERIALIZED VIEW "AggregatedData"
 WITH (timescaledb.continuous) AS
 SELECT
-    time_bucket('1 hour', ts) AS bucket,
+    time_bucket('1 hour', ts) AS hour,
     id,
-    SUM(value) AS avg_value
+    SUM(value) AS hour_total
 FROM
     "SensorsData"
 GROUP BY
-    bucket, id;
+    hour, id;
 
 
 SELECT add_continuous_aggregate_policy('"AggregatedData"',
-    start_offset => INTERVAL '3 hours',
-    end_offset   => INTERVAL '15 minutes',
+    start_offset => INTERVAL '1 hour',
+    end_offset   => NULL,
     schedule_interval => INTERVAL '10 minutes');
