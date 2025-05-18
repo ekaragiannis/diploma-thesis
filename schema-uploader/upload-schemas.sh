@@ -1,8 +1,6 @@
 #!/bin/bash
 set -e
 
-SCHEMA_REGISTRY_URL="http://schema-registry:8081"
-
 echo "Uploading Avro schemas..."
 
 # Function to properly format Avro schema for Schema Registry
@@ -17,11 +15,11 @@ upload_avro_schema() {
 
   curl -X POST -H "Content-Type: application/vnd.schemaregistry.v1+json" \
     --data "$payload" \
-    "$SCHEMA_REGISTRY_URL/subjects/$subject-value/versions"
+    "$KAFKA_SCHEMA_REGISTRY/subjects/$subject-value/versions"
 
 }
 
-upload_avro_schema "mqtt.SensorsData"
+upload_avro_schema "$KAFKA_TOPIC_MQTT_SENSORS_METRICS"
 
 
 

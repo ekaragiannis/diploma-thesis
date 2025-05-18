@@ -1,0 +1,13 @@
+{
+  "name": "${file:/secrets/properties:KAFKA_TOPIC_REDIS_HOURLY_METRICS}",
+  "config": {
+    "connector.class": "com.redis.kafka.connect.RedisSinkConnector",
+    "tasks.max": "1",
+    "topics": "${file:/secrets/properties:KAFKA_TOPIC_REDIS_HOURLY_METRICS}",
+    "redis.uri": "${file:/secrets/properties:REDIS_URI}",
+    "redis.command": "JSONSET",
+    "key.converter": "org.apache.kafka.connect.storage.StringConverter",
+    "value.converter": "io.confluent.connect.avro.AvroConverter",
+    "value.converter.schema.registry.url": "${file:/secrets/properties:KAFKA_SCHEMA_REGISTRY}"
+  }
+}

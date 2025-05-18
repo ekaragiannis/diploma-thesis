@@ -1,26 +1,27 @@
 #!/bin/bash
 set -e
 
-CONNECT_URL="http://connect:8083"
-CONFIGS_DIR="configs"
-
-CONNECTOR1="sink.timescaledb.SensorsData"
-CONNECTOR2="source.timescaledb.AggregatedData"
-CONNECTOR3="sink.redis.AggregatedData"
 
 echo "Deploying connectors..."
 
-curl -X POST -H "Content-Type: application/json" \
-  --data @$CONFIGS_DIR/$CONNECTOR1.json \
-  "$CONNECT_URL/connectors"
+# Array of connector config files
+CONNECTORS=(
+  "$KAFKA_CONNECTOR_JDBC_SINK"
+  "$KAFKA_CONNECTOR_DEBEZIUM_SOURCE"
+  "$KAFKA_CONNECTOR_REDIS_SINK"
+)
 
-curl -X POST -H "Content-Type: application/json" \
-  --data @$CONFIGS_DIR/$CONNECTOR2.json \
-  "$CONNECT_URL/connectors"
+# Loop through connectors and deploy
+for connector in "${CONNECTORS[@]}"; do
+  echo "Deploying connector: ${connector}"
+  
+  if ! curl -s -X POST -H "Content-Type: application/json" \
+       --data @"configs/${connector}.json" \
+       "$KAFKA_CONNECT/connectors"; then
+    echo "ERROR: Failed to deploy connector ${connector}"
+  else
+    echo "Successfully deployed connector: ${connector}"
+  fi
+done
 
-
-curl -X POST -H "Content-Type: application/json" \
-  --data @$CONFIGS_DIR/$CONNECTOR3.json \
-  "$CONNECT_URL/connectors"
-
-echo "Connectors deployed."
+echo "Connectors deployment completed."

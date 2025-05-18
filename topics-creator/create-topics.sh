@@ -1,31 +1,33 @@
 #!/bin/bash
+set -e
 
 KAFKA_BOOTSTRAP="broker:29092"
 
-TOPIC1="mqtt.SensorsData"
-PARTITIONS1=3
-REPLICATION1=1
+PARTITIONS=3
+REPLICATION=1
 
-TOPIC2="timescaledb.public.AggregatedData"
-PARTITIONS2=3
-REPLICATION2=1
+echo "Creating topics..."
 
-TOPIC3="redis.AggregatedData"
-PARTITIONS3=3
-REPLICATION3=1
+# Array of topics to create
+TOPICS=(
+  "$KAFKA_TOPIC_MQTT_SENSORS_METRICS"
+  "$KAFKA_TOPIC_DB_HOURLY_METRICS"
+  "$KAFKA_TOPIC_REDIS_HOURLY_METRICS"
+)
 
-echo "Create topics..."
+# Loop through topics and create them
+for topic in "${TOPICS[@]}"; do
+  echo "Creating topic: ${topic}"
+  
+  if ! kafka-topics --bootstrap-server "$KAFKA_BOOTSTRAP" \
+                   --create --if-not-exists \
+                   --topic "$topic" \
+                   --partitions "$PARTITIONS" \
+                   --replication-factor "$REPLICATION"; then
+    echo "ERROR: Failed to create topic ${topic}"
+  else
+    echo "Kafka topic ${topic} created (or already exists)"
+  fi
+done
 
-# Create topic to consume raw sensor events from MQTT source connector (input data from MQTT)
-kafka-topics --bootstrap-server "$KAFKA_BOOTSTRAP" --create --if-not-exists --topic "$TOPIC1" --partitions "$PARTITIONS1" --replication-factor "$REPLICATION1"
-echo "Kafka topic $TOPIC1 created (or already exists)"
-
-# Create topic to publish change events captured from TimescaleDB's hourly aggregated table (using Debezium source connector)
-kafka-topics --bootstrap-server "$KAFKA_BOOTSTRAP" --create --if-not-exists --topic "$TOPIC2" --partitions "$PARTITIONS2" --replication-factor "$REPLICATION2"
-echo "Kafka topic $TOPIC2 created (or already exists)"
-
-# Create topic to consume processed aggregation results after Kafka Streams processing (output for Redis or other sinks)
-kafka-topics --bootstrap-server "$KAFKA_BOOTSTRAP" --create --if-not-exists --topic "$TOPIC3" --partitions "$PARTITIONS3" --replication-factor "$REPLICATION3"
-echo "Kafka topic $TOPIC3 created (or already exists)"
-
-echo "Topics created."
+echo "Topics creation complete

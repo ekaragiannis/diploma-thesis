@@ -1,0 +1,23 @@
+{
+  "name": "${file:/secrets/properties:KAFKA_TOPIC_DB_HOURLY_METRICS}",
+  "config": {
+    "connector.class": "io.debezium.connector.postgresql.PostgresConnector",
+    "tasks.max": "1",
+    "database.hostname": "${file:/secrets/properties:DB_HOST}",
+    "database.port": "${file:/secrets/properties:DB_PORT}",
+    "database.user": "${file:/secrets/properties:DB_USER}",
+    "database.password": "${file:/secrets/properties:DB_PASSWORD}",
+    "database.dbname": "${file:/secrets/properties:DB_NAME}",
+    "topic.prefix": "db",
+    "plugin.name": "pgoutput",
+    "schema.include.list": "_timescaledb_internal",
+    "table.exclude.list": "_timescaledb_internal._hyper_1_1_chunk",
+    "transforms": "timescaledb",
+    "transforms.timescaledb.type": "io.debezium.connector.postgresql.transforms.timescaledb.TimescaleDb",
+    "transforms.timescaledb.database.hostname": "${file:/secrets/properties:DB_HOST}",
+    "transforms.timescaledb.database.port": "${file:/secrets/properties:DB_PORT}",
+    "transforms.timescaledb.database.user": "${file:/secrets/properties:DB_USER}",
+    "transforms.timescaledb.database.password": "${file:/secrets/properties:DB_PASSWORD}",
+    "transforms.timescaledb.database.dbname": "${file:/secrets/properties:DB_NAME}"
+  }
+}

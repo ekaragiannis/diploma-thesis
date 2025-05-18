@@ -45,7 +45,7 @@ services:
       - timescaledb
       - redis
     environment:
-      CONNECT_BOOTSTRAP_SERVERS: 'broker:29092'
+      CONNECT_BOOTSTRAP_SERVERS: ${KAKFA_BOOTSTRAP}
       CONNECT_REST_PORT: 8083
       CONNECT_GROUP_ID: "connect"
       CONNECT_CONFIG_STORAGE_TOPIC: "connect-configs"
@@ -56,11 +56,14 @@ services:
       CONNECT_STATUS_STORAGE_REPLICATION_FACTOR: 1
       CONNECT_KEY_CONVERTER: "org.apache.kafka.connect.storage.StringConverter"
       CONNECT_VALUE_CONVERTER: "io.confluent.connect.avro.AvroConverter"
-      CONNECT_VALUE_CONVERTER_SCHEMA_REGISTRY_URL: "http://schema-registry:8081"
+      CONNECT_VALUE_CONVERTER_SCHEMA_REGISTRY_URL: ${KAFKA_SCHEMA_REGISTRY}
       CONNECT_INTERNAL_KEY_CONVERTER: "org.apache.kafka.connect.json.JsonConverter"
       CONNECT_INTERNAL_VALUE_CONVERTER: "org.apache.kafka.connect.json.JsonConverter"
       CONNECT_REST_ADVERTISED_HOST_NAME: "connect"
-      CONNECT_TOPIC_CREATION_ENABLE: "false"
+      CONNECT_TOPIC_CREATION_ENABLE: "false" # External secrets config
+      # See https://docs.confluent.io/current/connect/security.html#externalizing-secrets
+      CONNECT_CONFIG_PROVIDERS: 'file'
+      CONNECT_CONFIG_PROVIDERS_FILE_CLASS: 'org.apache.kafka.common.config.provider.FileConfigProvider'
     healthcheck:
       test: [ "CMD", "curl", "-f", "http://localhost:8083" ]
       interval: 10s
@@ -75,7 +78,7 @@ services:
     depends_on:
       - broker
     environment:
-      SCHEMA_REGISTRY_KAFKASTORE_BOOTSTRAP_SERVERS: "broker:29092"
+      SCHEMA_REGISTRY_KAFKASTORE_BOOTSTRAP_SERVERS: ${KAKFA_BOOTSTRAP}
       SCHEMA_REGISTRY_HOST_NAME: "schema-registry"
     healthcheck:
       test: [ "CMD", "curl", "-f", "http://localhost:8081" ]
@@ -92,9 +95,9 @@ services:
       - "8082:8082"
     environment:
       KAFKA_REST_HOST_NAME: kafka-rest-proxy
-      KAFKA_REST_BOOTSTRAP_SERVERS: broker:29092
+      KAFKA_REST_BOOTSTRAP_SERVERS: ${KAKFA_BOOTSTRAP}
       KAFKA_REST_LISTENERS: "http://0.0.0.0:8082"
-      KAFKA_REST_SCHEMA_REGISTRY_URL: "http://schema-registry:8081"
+      KAFKA_REST_SCHEMA_REGISTRY_URL: ${KAFKA_SCHEMA_REGISTRY}
 
   kafka-ui:
     container_name: kafka-ui
@@ -107,11 +110,11 @@ services:
       - schema-registry
     environment:
       DYNAMIC_CONFIG_ENABLED: 'true'
-      KAFKA_CLUSTERS_0_BOOTSTRAPSERVERS: broker:29092
+      KAFKA_CLUSTERS_0_BOOTSTRAPSERVERS: ${KAKFA_BOOTSTRAP}
       KAFKA_CLUSTERS_0_METRICS_PORT: 9997
-      KAFKA_CLUSTERS_0_SCHEMAREGISTRY: http://schema-registry:8081
+      KAFKA_CLUSTERS_0_SCHEMAREGISTRY: ${KAFKA_SCHEMA_REGISTRY}
       KAFKA_CLUSTERS_0_KAFKACONNECT_0_NAME: first
-      KAFKA_CLUSTERS_0_KAFKACONNECT_0_ADDRESS: http://connect:8083
+      KAFKA_CLUSTERS_0_KAFKACONNECT_0_ADDRESS: ${KAFKA_CONNECT}
 
   timescaledb:
     image: timescale/timescaledb-ha:pg17
@@ -160,8 +163,8 @@ services:
   #     schema-registry:
   #       condition: service_healthy
   #   environment:
-  #     KAFKA_BOOTSTRAP_SERVERS: "broker:29092"
-  #     SCHEMA_REGISTRY_URL: "http://schema-registry:8081"
+  #     KAFKA_BOOTSTRAP_SERVERS: ${KAKFA_BOOTSTRAP}
+  #     SCHEMA_REGISTRY_URL: ${KAFKA_SCHEMA_REGISTRY}
 
   # ksqldb-server:
   #   image: confluentinc/ksqldb-server
@@ -172,12 +175,12 @@ services:
   #   ports:
   #     - "8088:8088"
   #   environment:
-  #     KSQL_BOOTSTRAP_SERVERS: "broker:29092"
+  #     KSQL_BOOTSTRAP_SERVERS: ${KAKFA_BOOTSTRAP}
   #     KSQL_LISTENERS: "http://0.0.0.0:8088"
-  #     KSQL_KSQL_SCHEMA_REGISTRY_URL: "http://schema-registry:8081"
+  #     KSQL_KSQL_SCHEMA_REGISTRY_URL: ${KAFKA_SCHEMA_REGISTRY}
   #     KSQL_KSQL_SERVICE_ID: "ksql_service_"
   #     KSQL_KSQL_STREAMS_AUTO_OFFSET_RESET: "earliest"
-  #     KSQL_KSQL_CONNECT_URL: "http://connect:8083"
+  #     KSQL_KSQL_CONNECT_URL: ${KAFKA_CONNECT}
 
   # ksqldb-cli:
   #   container_name: ksqldb-cli
@@ -193,6 +196,8 @@ services:
     build:
       context: .
       dockerfile: topics-creator/Dockerfile
+    env_file:
+      - .env
     container_name: topics-creator
     depends_on:
       broker:
@@ -202,6 +207,8 @@ services:
     build:
       context: .
       dockerfile: connectors-deployer/Dockerfile
+    env_file:
+      - .env
     container_name: connectors-deployer
     depends_on:
       connect:
@@ -211,6 +218,8 @@ services:
     build:
       context: .
       dockerfile: schema-uploader/Dockerfile
+    env_file:
+      - .env
     container_name: schema-uploader
     depends_on:
       schema-registry:
