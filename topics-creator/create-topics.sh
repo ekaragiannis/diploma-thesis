@@ -30,4 +30,4 @@ for topic in "${TOPICS[@]}"; do
   fi
 done
 
-echo "Topics creation complete
+echo "Topics creation complete"

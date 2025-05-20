@@ -1,23 +1,26 @@
-CREATE STREAM hourly_data 
-WITH (
-  KAFKA_TOPIC='timescaledb.public.hourly_data',
-  VALUE_FORMAT='AVRO'
-);
+CREATE STREAM `DbHourlySummary` WITH ( KAFKA_TOPIC='db.public.HourlySummary', VALUE_FORMAT='AVRO' );
 
-CREATE TABLE daily_device_summary WITH (
-  kafka_topic='redis-daily-summary',
+CREATE TABLE `RedisHourlySummary` WITH (
+  kafka_topic='redis.HourlySummary',
   value_format='AVRO'
 ) AS
 SELECT
-  CAST(after->device_id AS STRING) + ':' + FORMAT_TIMESTAMP(FROM_UNIXTIME(after->bucket / 1000), 'yyyy-MM-dd') AS "redis_key",
+  after->id AS id,
   AS_MAP(
-    COLLECT_LIST(FORMAT_TIMESTAMP(FROM_UNIXTIME(after->bucket / 1000), 'HH')),
-    COLLECT_LIST(ARRAY[after->avg_temp, after->max_temp, after->min_temp])
+    COLLECT_LIST(
+      FORMAT_TIMESTAMP(
+        PARSE_TIMESTAMP(
+          CAST(after->hour), 'yyyy-MM-dd''T''HH:mm:ss.SSSSSS''Z'''
+        ),
+        'HH'
+      )
+    ),
+    COLLECT_LIST(CAST(after->hour_total AS STRING))
   ) AS "data"
-FROM hourly_data
-WINDOW TUMBLING (SIZE 24 HOURS, RETENTION 25 HOURS, GRACE PERIOD 1 HOUR)
-GROUP BY CAST(after->device_id AS STRING) + ':' + FORMAT_TIMESTAMP(FROM_UNIXTIME(after->bucket / 1000), 'yyyy-MM-dd')
-EMIT FINAL;
+FROM `DbHourlySummary`
+WINDOW TUMBLING (SIZE 1 DAY)
+GROUP BY after->id
+EMIT CHANGES;
 
 -- CREATE TABLE daily_device_summary WITH (
 --   kafka_topic='redis-daily-summary',

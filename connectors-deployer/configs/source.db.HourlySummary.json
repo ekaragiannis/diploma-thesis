@@ -18,6 +18,7 @@
     "transforms.timescaledb.database.port": "${file:/secrets/properties:DB_PORT}",
     "transforms.timescaledb.database.user": "${file:/secrets/properties:DB_USER}",
     "transforms.timescaledb.database.password": "${file:/secrets/properties:DB_PASSWORD}",
-    "transforms.timescaledb.database.dbname": "${file:/secrets/properties:DB_NAME}"
+    "transforms.timescaledb.database.dbname": "${file:/secrets/properties:DB_NAME}",
+    "transforms.timescaledb.target.topic.prefix": "db"
   }
 }
