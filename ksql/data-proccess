@@ -1,3 +1,0 @@
-CREATE STREAM IF NOT EXISTS raw_data (`device_id` INT, `temperature` DOUBLE) WITH (KAFKA_TOPIC='raw-data', VALUE_FORMAT='JSON', PARTITIONS=3);
-
-CREATE STREAM IF NOT EXISTS sensors_data WITH (KAFKA_TOPIC='sensors-data', VALUE_FORMAT='AVRO', PARTITIONS=3) AS SELECT `device_id`, (`temperature` - 32) * 5 / 9 AS `temperature`, FROM_UNIXTIME(ROWTIME) AS `time` FROM raw_data WHERE `device_id` IS NOT NULL EMIT CHANGES; 

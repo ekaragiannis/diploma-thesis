@@ -9,32 +9,13 @@ SELECT
   AS_MAP(
     COLLECT_LIST(
       FORMAT_TIMESTAMP(
-        PARSE_TIMESTAMP(
-          CAST(after->hour), 'yyyy-MM-dd''T''HH:mm:ss.SSSSSS''Z'''
-        ),
+        PARSE_TIMESTAMP(after->hour, 'yyyy-MM-dd''T''HH:mm:ss.SSSSSS''Z'''),
         'HH'
       )
     ),
-    COLLECT_LIST(CAST(after->hour_total AS STRING))
+    COLLECT_LIST(after->hour_total)
   ) AS "data"
 FROM `DbHourlySummary`
 WINDOW TUMBLING (SIZE 1 DAY)
 GROUP BY after->id
 EMIT CHANGES;
-
--- CREATE TABLE daily_device_summary WITH (
---   kafka_topic='redis-daily-summary',
---   value_format='AVRO'
--- ) AS
--- SELECT
---   CAST(after->device_id AS STRING) + ':' + FORMAT_TIMESTAMP(FROM_UNIXTIME(after->bucket / 1000), 'yyyy-MM-dd') AS "redis_key",
---   AS_MAP(
---     COLLECT_LIST(
---       FORMAT_TIMESTAMP(FROM_UNIXTIME(after->bucket / 1000), 'HH')
---     ),
---     COLLECT_LIST(ARRAY[after->avg_temp, after->max_temp, after->min_temp])
---   ) AS "data"
--- FROM hourly_data
--- WINDOW TUMBLING (SIZE 5 MINUTES, GRACE PERIOD 1 MINUTE)
--- GROUP BY CAST(after->device_id AS STRING) + ':' + FORMAT_TIMESTAMP(FROM_UNIXTIME(after->bucket / 1000), 'yyyy-MM-dd')
--- EMIT FINAL;
