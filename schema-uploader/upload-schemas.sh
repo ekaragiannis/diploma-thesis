@@ -19,7 +19,7 @@ upload_avro_schema() {
 
 }
 
-upload_avro_schema "$KAFKA_TOPIC_MQTT_SENSORS_METRICS"
+upload_avro_schema "mqtt.SensorsMetrics"
 
 
 

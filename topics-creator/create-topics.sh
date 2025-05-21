@@ -10,9 +10,9 @@ echo "Creating topics..."
 
 # Array of topics to create
 TOPICS=(
-  "$KAFKA_TOPIC_MQTT_SENSORS_METRICS"
-  "$KAFKA_TOPIC_DB_HOURLY_METRICS"
-  "$KAFKA_TOPIC_REDIS_HOURLY_METRICS"
+  "mqtt.SensorsMetrics"
+  "db.public.HourlySummary"
+  "redis.HourlySummary"
 )
 
 # Loop through topics and create them

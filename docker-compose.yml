@@ -192,7 +192,25 @@ services:
     entrypoint: /bin/sh
     tty: true
 
-  # Setup container
+  mqtt:
+    build:
+      context: .
+      dockerfile: mosquitto/Dockerfile
+      args:
+        MQTT_USER: ${MQTT_USER}
+        MQTT_PASSWORD: ${MQTT_PASSWORD}
+    container_name: mqtt
+    ports:
+      - "1883:1883"
+      - "9001:9001"
+    restart: unless-stopped
+    # healthcheck:
+    #   test: [ "CMD", "mosquitto_sub", "-h", "localhost", "-t", "health/test", "-C", "1", "-u", "mqttuser", "-P", "mqttpassword" ]
+    #   interval: 30s
+    #   timeout: 10s
+    #   retries: 3
+
+    # Setup container
   topics-creator:
     build:
       context: .
@@ -241,5 +259,3 @@ services:
 volumes:
   timescale_data:
   redis_data:
-  mosquitto_data:
-  mosquitto_log:

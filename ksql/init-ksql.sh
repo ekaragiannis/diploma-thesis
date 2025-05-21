@@ -14,7 +14,7 @@ done
 
 echo "Creating ksqlDB streams..."
 
-curl -X POST "$KSQL_SERVER/ksql" \
+curl -X POST "$KAFKA_KSQL_SERVER/ksql" \
      -H "Content-Type: application/vnd.ksql.v1+json; charset=utf-8" \
      -d @"-"<<EOF
 {
@@ -23,7 +23,7 @@ curl -X POST "$KSQL_SERVER/ksql" \
 }
 EOF
 
-curl -X POST "$KSQL_SERVER/ksql" \
+curl -X POST "$KAFKA_KSQL_SERVER/ksql" \
      -H "Content-Type: application/vnd.ksql.v1+json; charset=utf-8" \
      -d @"-"<<EOF
 { 

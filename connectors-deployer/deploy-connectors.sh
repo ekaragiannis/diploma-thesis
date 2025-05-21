@@ -6,9 +6,10 @@ echo "Deploying connectors..."
 
 # Array of connector config files
 CONNECTORS=(
-  "$KAFKA_CONNECTOR_JDBC_SINK"
-  "$KAFKA_CONNECTOR_DEBEZIUM_SOURCE"
-  "$KAFKA_CONNECTOR_REDIS_SINK"
+  "source.mqtt.SensorsMetrics"
+  "sink.db.SensorsMetrics"
+  "source.db.HourlySummary"
+  "sink.redis.HourlySummary"
 )
 
 # Loop through connectors and deploy

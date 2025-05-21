@@ -1,5 +1,5 @@
 {
-  "name": "${file:/secrets/properties:KAFKA_TOPIC_DB_HOURLY_METRICS}",
+  "name": "source.db.HourlySummary",
   "config": {
     "connector.class": "io.debezium.connector.postgresql.PostgresConnector",
     "tasks.max": "1",

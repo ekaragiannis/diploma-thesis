@@ -1,14 +1,14 @@
 {
-  "name": "${file:/secrets/properties:KAFKA_CONNECTOR_JDBC_SINK}",
+  "name": "sink.db.SensorsMetrics",
   "config": {
     "connector.class": "io.confluent.connect.jdbc.JdbcSinkConnector",
     "tasks.max": "1",
-    "topics": "${file:/secrets/properties:KAFKA_TOPIC_MQTT_SENSORS_METRICS}",
+    "topics": "mqtt.SensorsMetrics",
     "connection.url": "${file:/secrets/properties:DB_CONNECTION_URL}",
     "connection.user": "${file:/secrets/properties:DB_USER}",
     "connection.password": "${file:/secrets/properties:DB_PASSWORD}",
     "insert.mode": "insert",
-    "table.name.format": "${file:/secrets/properties:DB_METRICS_TABLE}",
+    "table.name.format": "SensorsMetrics",
     "key.converter": "org.apache.kafka.connect.storage.StringConverter",
     "value.converter": "io.confluent.connect.avro.AvroConverter",
     "value.converter.schema.registry.url": "${file:/secrets/properties:KAFKA_SCHEMA_REGISTRY}"

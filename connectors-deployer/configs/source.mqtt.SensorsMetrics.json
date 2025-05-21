@@ -1,0 +1,14 @@
+{
+  "name": "source.mqtt.SensorsMetrics",
+  "config": {
+    "connector.class": "io.lenses.streamreactor.connect.mqtt.source.MqttSourceConnector",
+    "tasks.max": "1",
+    "connect.mqtt.kcql": "INSERT INTO mqtt.SensorsMetrics SELECT * FROM /sensors/metrics WITHCONVERTER=`io.lenses.streamreactor.connect.converters.source.JsonSimpleConverter`",
+    "connect.mqtt.client.id": "mqtt_client_id",
+    "connect.mqtt.hosts": "${file:/secrets/properties:MQTT_HOST}",
+    "connect.mqtt.username": "${file:/secrets/properties:MQTT_USER}",
+    "connect.mqtt.password": "${file:/secrets/properties:MQTT_PASSWORD}",
+    "connect.mqtt.service.quality": "1",
+    "schema.registry.url": "${file:/secrets/properties:KAFKA_SCHEMA_REGISTRY}"
+  }
+}
