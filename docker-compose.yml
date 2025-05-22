@@ -204,13 +204,8 @@ services:
       - "1883:1883"
       - "9001:9001"
     restart: unless-stopped
-    # healthcheck:
-    #   test: [ "CMD", "mosquitto_sub", "-h", "localhost", "-t", "health/test", "-C", "1", "-u", "mqttuser", "-P", "mqttpassword" ]
-    #   interval: 30s
-    #   timeout: 10s
-    #   retries: 3
 
-    # Setup container
+  # Setup container
   topics-creator:
     build:
       context: .
@@ -233,16 +228,16 @@ services:
       connect:
         condition: service_healthy
 
-  schema-uploader:
-    build:
-      context: .
-      dockerfile: schema-uploader/Dockerfile
-    env_file:
-      - .env
-    container_name: schema-uploader
-    depends_on:
-      schema-registry:
-        condition: service_healthy
+  # schema-uploader:
+  #   build:
+  #     context: .
+  #     dockerfile: schema-uploader/Dockerfile
+  #   env_file:
+  #     - .env
+  #   container_name: schema-uploader
+  #   depends_on:
+  #     schema-registry:
+  #       condition: service_healthy
 
   ksql-init:
     build:
