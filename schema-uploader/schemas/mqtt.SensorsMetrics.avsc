@@ -1,8 +1,0 @@
-{
-  "type": "record",
-  "name": "TimescaleSensorsData",
-  "fields": [
-    { "name": "id", "type": "string" },
-    { "name": "value", "type": "float" }
-  ]
-}
