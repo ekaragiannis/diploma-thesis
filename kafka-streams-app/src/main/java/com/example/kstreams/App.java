@@ -1,6 +1,8 @@
 package com.example.kstreams;
 
 import java.time.OffsetDateTime;
+import java.time.ZoneId;
+import java.time.ZonedDateTime;
 import java.time.format.DateTimeFormatter;
 import java.util.Map;
 import java.util.Properties;
@@ -36,6 +38,9 @@ public class App {
 
     // Reuse a single ObjectMapper instance
     private static final ObjectMapper OBJECT_MAPPER = new ObjectMapper();
+
+    // Greece Athens timezone
+    private static final ZoneId GREECE_ATHENS_ZONE = ZoneId.of("Europe/Athens");
 
     public static void main(String[] args) {
         logger.info("Starting Kafka Streams application...");
@@ -109,12 +114,18 @@ public class App {
                         }
                         Double energy = ((Number) valueObj).doubleValue();
 
-                        // Parse the ISO timestamp to extract only the hour (HH)
+                        // Parse the ISO timestamp and convert to Greece Athens timezone
                         String hourOfDay;
                         try {
                             OffsetDateTime dateTime = OffsetDateTime.parse(hourTimestamp,
                                     DateTimeFormatter.ISO_OFFSET_DATE_TIME);
-                            hourOfDay = String.format("%02d", dateTime.getHour()); // always 2 digits
+
+                            // Convert to Greece Athens timezone
+                            ZonedDateTime greeceTime = dateTime.atZoneSameInstant(GREECE_ATHENS_ZONE);
+                            hourOfDay = String.format("%02d", greeceTime.getHour()); // always 2 digits
+
+                            logger.debug("Original timestamp: {}, Greece Athens time: {}, Hour: {}",
+                                    hourTimestamp, greeceTime, hourOfDay);
                         } catch (Exception e) {
                             logger.error("Failed to parse timestamp: {}", hourTimestamp, e);
                             return new KeyValue<>(null, null);
