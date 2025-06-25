@@ -1,0 +1,37 @@
+{
+  "type": "record",
+  "name": "DebeziumHourlyData",
+  "namespace": "com.example.kstreams",
+  "doc": "Schema for Debezium CDC events containing hourly energy consumption data",
+  "fields": [
+    {
+      "name": "after",
+      "type": [
+        "null",
+        {
+          "type": "record",
+          "name": "HourlySummaryRecord",
+          "doc": "Record containing hourly energy consumption summary data",
+          "fields": [
+            {
+              "name": "name",
+              "type": "string",
+              "doc": "Unique identifier for the sensor or device"
+            },
+            {
+              "name": "hour",
+              "type": "string",
+              "doc": "ISO 8601 timestamp representing the hour of measurement (e.g., '2024-01-15T14:00:00Z')"
+            },
+            {
+              "name": "energy_total",
+              "type": "double",
+              "doc": "Total energy consumption in kilowatt-hours (kWh) for the specified hour"
+            }
+          ]
+        }
+      ],
+      "doc": "The new state of the record after the change. Contains the updated hourly summary data."
+    }
+  ]
+} 
