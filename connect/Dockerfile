@@ -11,7 +11,7 @@ RUN wget -q https://github.com/lensesio/stream-reactor/releases/download/9.0.0/k
   rm kafka-connect-mqtt-9.0.0.zip
 
 # Final image
-FROM confluentinc/cp-kafka-connect:latest
+FROM confluentinc/cp-kafka-connect:8.0.0
 
 # Install connectors from Confluent Hub
 RUN confluent-hub install --no-prompt confluentinc/kafka-connect-jdbc:latest && \

@@ -1,4 +1,4 @@
-FROM eclipse-mosquitto:latest
+FROM eclipse-mosquitto:2.0.21
 
 # Declare build arguments
 ARG MQTT_USER
