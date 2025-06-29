@@ -45,7 +45,7 @@ services:
       - timescaledb
       - redis
     environment:
-      CONNECT_BOOTSTRAP_SERVERS: ${KAKFA_BOOTSTRAP}
+      CONNECT_BOOTSTRAP_SERVERS: ${KAFKA_BOOTSTRAP}
       CONNECT_REST_PORT: 8083
       CONNECT_GROUP_ID: "connect"
       CONNECT_CONFIG_STORAGE_TOPIC: "connect-configs"
@@ -78,7 +78,7 @@ services:
     depends_on:
       - broker
     environment:
-      SCHEMA_REGISTRY_KAFKASTORE_BOOTSTRAP_SERVERS: ${KAKFA_BOOTSTRAP}
+      SCHEMA_REGISTRY_KAFKASTORE_BOOTSTRAP_SERVERS: ${KAFKA_BOOTSTRAP}
       SCHEMA_REGISTRY_HOST_NAME: "schema-registry"
     healthcheck:
       test: [ "CMD", "curl", "-f", "http://localhost:8081" ]
@@ -96,7 +96,7 @@ services:
       - "8082:8082"
     environment:
       KAFKA_REST_HOST_NAME: kafka-rest-proxy
-      KAFKA_REST_BOOTSTRAP_SERVERS: ${KAKFA_BOOTSTRAP}
+      KAFKA_REST_BOOTSTRAP_SERVERS: ${KAFKA_BOOTSTRAP}
       KAFKA_REST_LISTENERS: "http://0.0.0.0:8082"
       KAFKA_REST_SCHEMA_REGISTRY_URL: ${KAFKA_SCHEMA_REGISTRY}
 
@@ -111,7 +111,7 @@ services:
       - schema-registry
     environment:
       DYNAMIC_CONFIG_ENABLED: 'true'
-      KAFKA_CLUSTERS_0_BOOTSTRAPSERVERS: ${KAKFA_BOOTSTRAP}
+      KAFKA_CLUSTERS_0_BOOTSTRAPSERVERS: ${KAFKA_BOOTSTRAP}
       KAFKA_CLUSTERS_0_METRICS_PORT: 9997
       KAFKA_CLUSTERS_0_SCHEMAREGISTRY: ${KAFKA_SCHEMA_REGISTRY}
       KAFKA_CLUSTERS_0_KAFKACONNECT_0_NAME: first
@@ -164,13 +164,37 @@ services:
       - "9001:9001"
     restart: unless-stopped
 
-  kafka-streams-app:
+  setup-topics:
     build:
       context: .
-      dockerfile: kafka-streams-app/Dockerfile
+      dockerfile: setup-topics/Dockerfile
     env_file:
       - .env
-    container_name: kafka-streams-app
+    container_name: setup-topics
+    depends_on:
+      broker:
+        condition: service_healthy
+
+  setup-schemas:
+    build:
+      context: .
+      dockerfile: setup-schemas/Dockerfile
+    env_file:
+      - .env
+    container_name: setup-schemas
+    depends_on:
+      broker:
+        condition: service_healthy
+      schema-registry:
+        condition: service_healthy
+
+  setup-connectors:
+    build:
+      context: .
+      dockerfile: setup-connectors/Dockerfile
+    env_file:
+      - .env
+    container_name: setup-connectors
     depends_on:
       broker:
         condition: service_healthy
@@ -178,8 +202,22 @@ services:
         condition: service_healthy
       connect:
         condition: service_healthy
-      kafka-rest-proxy:
-        condition: service_started
+  # kafka-streams-app:
+  #   build:
+  #     context: .
+  #     dockerfile: kafka-streams-app/Dockerfile
+  #   env_file:
+  #     - .env
+  #   container_name: kafka-streams-app
+  #   depends_on:
+  #     broker:
+  #       condition: service_healthy
+  #     schema-registry:
+  #       condition: service_healthy
+  #     connect:
+  #       condition: service_healthy
+  #     kafka-rest-proxy:
+  #       condition: service_started
 
 volumes:
   timescale_data:

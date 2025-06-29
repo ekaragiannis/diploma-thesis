@@ -90,29 +90,29 @@ public class App {
                             return new KeyValue<>(null, null);
                         }
 
-                        // Extract id from the nested record
-                        Object idObj = after.get("id");
-                        if (idObj == null) {
-                            logger.warn("No 'id' field found in 'after' record");
+                        // Extract sensor from the nested record
+                        Object sensorObj = after.get("sensor");
+                        if (sensorObj == null) {
+                            logger.warn("No 'sensor' field found in 'after' record");
                             return new KeyValue<>(null, null);
                         }
-                        String id = idObj.toString();
+                        String sensor = sensorObj.toString();
 
                         // Extract hour from the nested record
-                        Object hourObj = after.get("hour");
-                        if (hourObj == null) {
-                            logger.warn("No 'hour' field found in 'after' record");
+                        Object hourBucketObj = after.get("hour_bucket");
+                        if (hourBucketObj == null) {
+                            logger.warn("No 'hour_bucket' field found in 'after' record");
                             return new KeyValue<>(null, null);
                         }
-                        String hourTimestamp = hourObj.toString();
+                        String hourTimestamp = hourBucketObj.toString();
 
                         // Extract value from the nested record
-                        Object valueObj = after.get("hour_total");
-                        if (valueObj == null) {
-                            logger.warn("No 'hour_total' field found in 'after' record");
+                        Object energyObj = after.get("energy_total");
+                        if (energyObj == null) {
+                            logger.warn("No 'energy_total' field found in 'after' record");
                             return new KeyValue<>(null, null);
                         }
-                        Double energy = ((Number) valueObj).doubleValue();
+                        Double energy = ((Number) energyObj).doubleValue();
 
                         // Parse the ISO timestamp and convert to Greece Athens timezone
                         String hourOfDay;
@@ -131,11 +131,11 @@ public class App {
                             return new KeyValue<>(null, null);
                         }
 
-                        String newKey = id + "|" + hourOfDay;
+                        String newKey = sensor + "|" + hourOfDay;
                         logger.debug("Created new key: {}", newKey);
 
                         ObjectNode newValue = OBJECT_MAPPER.createObjectNode();
-                        newValue.put("hour", hourOfDay);
+                        newValue.put("hour_bucket", hourOfDay);
                         newValue.put("energy", energy);
 
                         String jsonString = newValue.toString();
@@ -149,32 +149,32 @@ public class App {
                             return new KeyValue<>(null, null);
                         }
 
-                        // Extract id from composite key
+                        // Extract sensor from composite key
                         String[] parts = key.split("\\|");
                         if (parts.length != 2) {
                             logger.warn("Invalid key format: {}", key);
                             return new KeyValue<>(null, null);
                         }
-                        String id = parts[0];
+                        String sensor = parts[0];
 
-                        return new KeyValue<>(id, value);
+                        return new KeyValue<>(sensor, value);
                     });
 
             KTable<String, String> aggregated = jsonStream
                     .groupByKey()
                     .aggregate(
                             () -> "{}",
-                            (id, json, aggregate) -> {
+                            (sensor, json, aggregate) -> {
                                 try {
                                     JsonNode newNode = OBJECT_MAPPER.readTree(json);
-                                    String hour = newNode.get("hour").asText();
+                                    String hourBucket = newNode.get("hour_bucket").asText();
                                     double energy = newNode.get("energy").asDouble();
                                     ObjectNode result = (ObjectNode) OBJECT_MAPPER.readTree(aggregate);
-                                    result.put(hour, energy);
+                                    result.put(hourBucket, energy);
 
                                     return OBJECT_MAPPER.writeValueAsString(result);
                                 } catch (Exception e) {
-                                    logger.error("Failed to aggregate JSON for id: {}", id, e);
+                                    logger.error("Failed to aggregate JSON for sensor: {}", sensor, e);
                                     return aggregate;
                                 }
                             },
