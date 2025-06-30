@@ -1,0 +1,21 @@
+{
+  "type": "record",
+  "name": "RedisAggData",
+  "namespace": "com.example.avro",
+  "doc": "Schema for aggregated sensor data stored in Redis. Contains hourly energy consumption data for each sensor over a 24-hour period, organized by hour of day (00-23). This schema represents the final aggregated data structure used for Redis storage and real-time analytics. Used for the redis.HourlySummary topic.",
+  "fields": [
+    {
+      "name": "sensor",
+      "type": "string",
+      "doc": "Unique identifier for the sensor or device (e.g., 'sensor_001', 'device_alpha'). This is the primary key used for Redis storage and serves as the identifier for retrieving aggregated data for a specific sensor."
+    },
+    {
+      "name": "data",
+      "type": {
+        "type": "map",
+        "values": "double"
+      },
+      "doc": "Key-value map where keys are hours of day (00-23 as strings) and values are total energy consumption in kilowatt-hours (kWh) for that hour. Example: {'14': 2.5, '15': 3.1} represents 2.5 kWh at 2 PM and 3.1 kWh at 3 PM. This structure enables efficient time-based queries and real-time analytics."
+    }
+  ]
+}

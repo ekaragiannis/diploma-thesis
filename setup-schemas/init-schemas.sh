@@ -31,14 +31,17 @@ post_schema() {
 # Post schemas to Schema Registry
 echo "=== Posting Schemas to Schema Registry ==="
 
-# Post MQTT sensor data schema
-post_schema "/opt/kafka/schemas/MqttSensorData.avsc" "mqtt.SensorsMetrics-value"
+# Post MQTT sensor data schema (raw sensor readings from MQTT)
+post_schema "/opt/kafka/schemas/mqtt.rawdata-value.avsc" "mqtt.rawdata-value"
 
-# Post Redis sensor data schema
-post_schema "/opt/kafka/schemas/RedisSensorData.avsc" "redis.HourlySummary-value"
+# Post database sensor data schema (processed data for database storage)
+post_schema "/opt/kafka/schemas/db.rawdata-value.avsc" "db.rawdata-value"
 
-# Post Debezium hourly data schema
-post_schema "/opt/kafka/schemas/DebeziumHourlyData.avsc" "db.public.HourlySummary-value"
+# Post Redis aggregated sensor data schema (hourly aggregations for Redis)
+post_schema "/opt/kafka/schemas/redis.aggdata-value.avsc" "redis.aggdata-value"
+
+# Post Debezium hourly data schema (CDC events from database)
+post_schema "/opt/kafka/schemas/db.public.hourlydata-value.avsc" "db.public.hourlydata-value"
 
 echo "=== Schema posting completed ==="
 

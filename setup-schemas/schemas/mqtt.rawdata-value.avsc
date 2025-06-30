@@ -1,0 +1,20 @@
+{
+  "type": "record",
+  "name": "MqttRawData",
+  "namespace": "com.example.avro",
+  "doc": "Schema for real-time sensor readings received via MQTT protocol. Represents individual energy consumption measurements from IoT sensors with timestamps for data processing and analytics. This schema is used for the mqtt.SensorsMetrics topic.",
+  "fields": [
+    {
+      "name": "energy",
+      "type": ["null", "double"],
+      "default": null,
+      "doc": "Energy consumption reading in kilowatt-hours (kWh) from the sensor. Represents the instantaneous or cumulative energy consumption value. Nullable to handle cases where the sensor reading is unavailable, corrupted, or the sensor is offline."
+    },
+    {
+      "name": "timestamp",
+      "type": ["null", "long"],
+      "default": null,
+      "doc": "Unix timestamp in milliseconds since epoch (January 1, 1970 UTC) when the sensor reading was captured. Used for data ordering, time-based aggregations, and ensuring data freshness. Nullable if the sensor doesn't provide timestamp information."
+    }
+  ]
+}

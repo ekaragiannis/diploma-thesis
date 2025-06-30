@@ -1,0 +1,25 @@
+{
+  "type": "record",
+  "name": "DbRawData",
+  "namespace": "com.example.avro",
+  "doc": "Schema for processed sensor data that will be stored in the database. This schema represents the transformed and enriched sensor readings after processing through Kafka Streams. Used for the db.SensorData topic.",
+  "fields": [
+    {
+      "name": "sensor",
+      "type": "string",
+      "doc": "Unique identifier for the sensor or device (e.g., 'sensor_001', 'device_alpha'). Extracted from the MQTT topic path and used as the primary identifier for database storage and querying."
+    },
+    {
+      "name": "energy",
+      "type": ["null", "double"],
+      "default": null,
+      "doc": "Processed energy consumption reading in kilowatt-hours (kWh). This value has been validated, cleaned, and potentially transformed from the original MQTT reading. Nullable to handle data quality issues."
+    },
+    {
+      "name": "timestamp",
+      "type": ["null", "long"],
+      "default": null,
+      "doc": "Unix timestamp in milliseconds since epoch representing when the sensor reading was originally captured. Used for temporal analysis, data ordering, and time-based aggregations in the database."
+    }
+  ]
+}

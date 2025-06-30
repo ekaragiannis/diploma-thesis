@@ -1,9 +1,9 @@
 {
-  "name": "sink.redis.HourlySummary",
+  "name": "sink.redis.aggdata",
   "config": {
     "connector.class": "com.redis.kafka.connect.RedisSinkConnector",
     "tasks.max": "1",
-    "topics": "redis.HourlySummary",
+    "topics": "redis.aggdata",
     "redis.uri": "${file:/secrets/properties:REDIS_URI}",
     "redis.command": "JSONSET",
     "key.converter": "org.apache.kafka.connect.storage.StringConverter",

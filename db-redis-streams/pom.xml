@@ -3,10 +3,10 @@
   <modelVersion>4.0.0</modelVersion>
  
   <groupId>com.example.kstreams</groupId>
-  <artifactId>kafka-streams-app</artifactId>
+  <artifactId>db-redis-streams</artifactId>
   <packaging>jar</packaging>
   <version>1.0-SNAPSHOT</version>
-  <name>kafka-streams-app</name>
+  <name>db-redis-streams</name>
   <url>http://maven.apache.org</url>
 
   <properties>

@@ -1,0 +1,37 @@
+{
+  "type": "record",
+  "name": "HourlyData",
+  "namespace": "com.example.avro",
+  "doc": "Schema for Debezium Change Data Capture (CDC) events containing hourly energy consumption data. This schema represents the structure of CDC events that capture changes to the hourly summary table in the database. Used for the db.public.HourlySummary topic.",
+  "fields": [
+    {
+      "name": "after",
+      "type": [
+        "null",
+        {
+          "type": "record",
+          "name": "HourlyDataAfter",
+          "doc": "Record containing hourly energy consumption summary data. Represents the aggregated energy consumption for a specific sensor during a specific hour.",
+          "fields": [
+            {
+              "name": "sensor",
+              "type": "string",
+              "doc": "Unique identifier for the sensor or device that generated the energy consumption data. Used as part of the composite key with hour_bucket for database indexing and querying."
+            },
+            {
+              "name": "hour_bucket",
+              "type": "string",
+              "doc": "ISO 8601 timestamp representing the hour of measurement (e.g., '2024-01-15T14:00:00Z'). This field is used for time-based partitioning and represents the start of the hour for which energy consumption is aggregated."
+            },
+            {
+              "name": "energy_total",
+              "type": "double",
+              "doc": "Total energy consumption in kilowatt-hours (kWh) for the specified hour and sensor. This is an aggregated value that represents the sum of all energy readings during the hour_bucket period."
+            }
+          ]
+        }
+      ],
+      "doc": "The new state of the record after the change. Contains the updated hourly summary data. In CDC events, this field contains the complete record after an INSERT or UPDATE operation, or null for DELETE operations."
+    }
+  ]
+}

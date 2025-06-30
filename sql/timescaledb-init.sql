@@ -1,24 +1,24 @@
-CREATE TABLE "SensorsMetrics" (
+CREATE TABLE rawdata (
     "sensor" TEXT NOT NULL,
-    "timestamp" TIMESTAMPTZ NOT NULL DEFAULT CURRENT_TIMESTAMP,
+    "timestamp" TIMESTAMP NOT NULL,
     "energy" FLOAT NOT NULL
 );
 
-SELECT create_hypertable('"SensorsMetrics"', 'ts');
+SELECT create_hypertable('rawdata', 'timestamp');
 
-CREATE MATERIALIZED VIEW "HourlySummary"
+CREATE MATERIALIZED VIEW hourlydata
 WITH (timescaledb.continuous) AS
 SELECT
-    time_bucket('1 hour', ts) AS hour_bucket,
+    time_bucket('1 hour', timestamp) AS hour_bucket,
     sensor,
     SUM(energy) AS energy_total
 FROM
-    "SensorsMetrics"
+    rawdata
 GROUP BY
-    hour_bucket, sensor;
+    hour_bucket, sensor;    
 
 
-SELECT add_continuous_aggregate_policy('"HourlySummary"',
+SELECT add_continuous_aggregate_policy('hourlydata',
     start_offset => INTERVAL '1 hour',
     end_offset   => NULL,
     schedule_interval => INTERVAL '10 minutes');

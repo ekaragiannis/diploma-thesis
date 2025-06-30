@@ -1,0 +1,27 @@
+{
+  "name": "source.mqtt.rawdata",
+  "config": {
+    "connector.class": "io.lenses.streamreactor.connect.mqtt.source.MqttSourceConnector",
+    "tasks.max": "1",
+    "connect.mqtt.kcql": "INSERT INTO mqtt.rawdata SELECT * FROM /sensors/+ WITHCONVERTER=`io.lenses.streamreactor.connect.converters.source.JsonSimpleConverter`",
+    "connect.mqtt.client.id": "mqtt_client_id",
+    "connect.mqtt.hosts": "${file:/secrets/properties:MQTT_HOST}",
+    "connect.mqtt.username": "${file:/secrets/properties:MQTT_USER}",
+    "connect.mqtt.password": "${file:/secrets/properties:MQTT_PASSWORD}",
+    "connect.mqtt.service.quality": "1",
+    "key.converter": "org.apache.kafka.connect.storage.StringConverter",
+    "value.converter": "io.confluent.connect.avro.AvroConverter",
+    "value.converter.schema.registry.url": "${file:/secrets/properties:KAFKA_SCHEMA_REGISTRY}",
+    "value.converter.auto.register.schemas": "false",
+    "value.converter.use.latest.version": "true",
+    "transforms": "extractKey,includeField,setSchemaMetadata,cast",
+    "transforms.extractKey.type": "org.apache.kafka.connect.transforms.ExtractField$Key",
+    "transforms.extractKey.field": "topic",
+    "transforms.includeField.type": "org.apache.kafka.connect.transforms.ReplaceField$Value",
+    "transforms.includeField.include": "energy,timestamp",
+    "transforms.cast.type": "org.apache.kafka.connect.transforms.Cast$Value",
+    "transforms.cast.spec": "value:float64",
+    "transforms.setSchemaMetadata.type": "org.apache.kafka.connect.transforms.SetSchemaMetadata$Value",
+    "transforms.setSchemaMetadata.schema.name": "MqttRawData"
+  }
+}

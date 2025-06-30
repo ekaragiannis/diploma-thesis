@@ -5,11 +5,11 @@ FROM maven:3.9-eclipse-temurin-21 AS build
 WORKDIR /app
 
 # Copy only the pom.xml first and download dependencies
-COPY kafka-streams-app/pom.xml ./
+COPY db-redis-streams/pom.xml ./
 RUN mvn dependency:go-offline
 
 # Now copy the source code (this prevents re-downloading dependencies if code changes)
-COPY kafka-streams-app/src ./src
+COPY db-redis-streams/src ./src
 
 # Package the application
 RUN mvn clean package
@@ -21,7 +21,7 @@ FROM eclipse-temurin:21-jdk
 WORKDIR /app
 
 # Copy the packaged JAR from the build stage
-COPY --from=build /app/target/kafka-streams-app-1.0-SNAPSHOT.jar app.jar
+COPY --from=build /app/target/db-redis-streams-1.0-SNAPSHOT.jar app.jar
 
 # Run the application
 CMD ["java", "-jar", "app.jar"]

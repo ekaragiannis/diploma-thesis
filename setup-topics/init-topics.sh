@@ -35,13 +35,16 @@ create_topic() {
 echo "=== Creating Kafka Topics ==="
 
 # Topic for MQTT sensor data
-create_topic "mqtt.SensorsMetrics" 3 1 "retention.ms=3600000"
+create_topic "mqtt.rawdata" 3 1 "retention.ms=3600000"
 
 # Topic for database hourly summary
-create_topic "db.public.HourlySummary" 3 1 "retention.ms=90000000"
+create_topic "db.public.hourlydata" 3 1 "retention.ms=90000000"
 
-# Topic for Redis hourly summary
-create_topic "redis.HourlySummary" 3 1 "cleanup.policy=compact"
+# Topic for database sensor data
+create_topic "db.rawdata" 3 1 "retention.ms=3600000"
+
+# Topic for Redis aggregated data
+create_topic "redis.aggdata" 3 1 "cleanup.policy=compact"
 
 echo "=== Topics creation completed ==="
 

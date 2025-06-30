@@ -30,16 +30,16 @@ deploy_connector() {
 echo "=== Deploying Kafka Connect Connectors ==="
 
 # Deploy MQTT source connector
-deploy_connector "/opt/kafka/configs/source.mqtt.SensorsMetrics.json" "source.mqtt.SensorsMetrics"
+deploy_connector "/opt/kafka/configs/source.mqtt.rawdata.json" "source.mqtt.rawdata"
 
 # Deploy database sink connector
-deploy_connector "/opt/kafka/configs/sink.db.SensorsMetrics.json" "sink.db.SensorsMetrics"
+deploy_connector "/opt/kafka/configs/sink.db.rawdata.json" "sink.db.rawdata"
 
 # Deploy database source connector (Debezium)
-deploy_connector "/opt/kafka/configs/source.db.HourlySummary.json" "source.db.HourlySummary"
+deploy_connector "/opt/kafka/configs/source.db.hourlydata.json" "source.db.hourlydata"
 
 # Deploy Redis sink connector
-deploy_connector "/opt/kafka/configs/sink.redis.HourlySummary.json" "sink.redis.HourlySummary"
+deploy_connector "/opt/kafka/configs/sink.redis.aggdata.json" "sink.redis.aggdata"
 
 echo "=== Connectors deployment completed ==="
 

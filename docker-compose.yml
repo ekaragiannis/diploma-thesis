@@ -80,6 +80,7 @@ services:
     environment:
       SCHEMA_REGISTRY_KAFKASTORE_BOOTSTRAP_SERVERS: ${KAFKA_BOOTSTRAP}
       SCHEMA_REGISTRY_HOST_NAME: "schema-registry"
+      SCHEMA_REGISTRY_SCHEMA_COMPATIBILITY_LEVEL: "FULL"
     healthcheck:
       test: [ "CMD", "curl", "-f", "http://localhost:8081" ]
       interval: 10s
@@ -164,6 +165,15 @@ services:
       - "9001:9001"
     restart: unless-stopped
 
+  adminer:
+    image: adminer:latest
+    container_name: adminer
+    ports:
+      - "8084:8080"
+    depends_on:
+      - timescaledb
+    restart: unless-stopped
+
   setup-topics:
     build:
       context: .
@@ -202,13 +212,14 @@ services:
         condition: service_healthy
       connect:
         condition: service_healthy
-  # kafka-streams-app:
+
+  # db-redis-streams:
   #   build:
   #     context: .
-  #     dockerfile: kafka-streams-app/Dockerfile
+  #     dockerfile: db-redis-streams/Dockerfile
   #   env_file:
   #     - .env
-  #   container_name: kafka-streams-app
+  #   container_name: db-redis-streams
   #   depends_on:
   #     broker:
   #       condition: service_healthy
@@ -218,6 +229,45 @@ services:
   #       condition: service_healthy
   #     kafka-rest-proxy:
   #       condition: service_started
+  #   environment:
+  #     KAKFA_BOOTSTRAP: ${KAFKA_BOOTSTRAP}
+  #     KAFKA_SCHEMA_REGISTRY: ${KAFKA_SCHEMA_REGISTRY}
+  #   restart: unless-stopped
+  #   healthcheck:
+  #     test: [ "CMD", "pgrep", "-f", "java" ]
+  #     interval: 30s
+  #     timeout: 10s
+  #     retries: 3
+  #     start_period: 60s
+
+  mqtt-db-streams:
+    build:
+      context: .
+      dockerfile: mqtt-db-streams/Dockerfile
+      args:
+        KAFKA_SCHEMA_REGISTRY: ${KAFKA_SCHEMA_REGISTRY}
+    env_file:
+      - .env
+    container_name: mqtt-db-streams
+    depends_on:
+      broker:
+        condition: service_healthy
+      schema-registry:
+        condition: service_healthy
+      connect:
+        condition: service_healthy
+      kafka-rest-proxy:
+        condition: service_started
+    environment:
+      KAKFA_BOOTSTRAP: ${KAFKA_BOOTSTRAP}
+      KAFKA_SCHEMA_REGISTRY: ${KAFKA_SCHEMA_REGISTRY}
+    restart: unless-stopped
+    healthcheck:
+      test: [ "CMD", "pgrep", "-f", "java" ]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+      start_period: 60s
 
 volumes:
   timescale_data:
