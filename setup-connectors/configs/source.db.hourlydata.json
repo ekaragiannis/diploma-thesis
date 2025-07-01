@@ -12,13 +12,19 @@
     "plugin.name": "pgoutput",
     "schema.include.list": "_timescaledb_internal",
     "table.exclude.list": "_timescaledb_internal._hyper_1_1_chunk",
-    "transforms": "timescaledb",
+    "value.converter": "io.confluent.connect.avro.AvroConverter",
+    "value.converter.schema.registry.url": "${file:/secrets/properties:KAFKA_SCHEMA_REGISTRY}",
+    "transforms": "timescaledb,includeField,setSchemaMetadata",
     "transforms.timescaledb.type": "io.debezium.connector.postgresql.transforms.timescaledb.TimescaleDb",
     "transforms.timescaledb.database.hostname": "${file:/secrets/properties:DB_HOST}",
     "transforms.timescaledb.database.port": "${file:/secrets/properties:DB_PORT}",
     "transforms.timescaledb.database.user": "${file:/secrets/properties:DB_USER}",
     "transforms.timescaledb.database.password": "${file:/secrets/properties:DB_PASSWORD}",
     "transforms.timescaledb.database.dbname": "${file:/secrets/properties:DB_NAME}",
-    "transforms.timescaledb.target.topic.prefix": "db"
+    "transforms.timescaledb.target.topic.prefix": "db",
+    "transforms.includeField.type": "org.apache.kafka.connect.transforms.ReplaceField$Value",
+    "transforms.includeField.include": "after",
+    "transforms.setSchemaMetadata.type": "org.apache.kafka.connect.transforms.SetSchemaMetadata$Value",
+    "transforms.setSchemaMetadata.schema.name": "com.example.avro.DbHourlyData"
   }
 }
