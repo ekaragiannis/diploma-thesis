@@ -1,9 +1,13 @@
 package com.example.kstreams;
 
+import java.time.Instant;
+import java.time.LocalDateTime;
 import java.time.OffsetDateTime;
 import java.time.ZoneId;
+import java.time.ZoneOffset;
 import java.time.ZonedDateTime;
 import java.time.format.DateTimeFormatter;
+import java.util.HashMap;
 import java.util.Map;
 import java.util.Properties;
 
@@ -17,6 +21,7 @@ import org.apache.kafka.streams.StreamsBuilder;
 import org.apache.kafka.streams.StreamsConfig;
 import org.apache.kafka.streams.errors.StreamsUncaughtExceptionHandler;
 import org.apache.kafka.streams.kstream.Consumed;
+import org.apache.kafka.streams.kstream.Grouped;
 import org.apache.kafka.streams.kstream.KStream;
 import org.apache.kafka.streams.kstream.KTable;
 import org.apache.kafka.streams.kstream.Materialized;
@@ -24,23 +29,17 @@ import org.apache.kafka.streams.kstream.Produced;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-import com.fasterxml.jackson.databind.JsonNode;
-import com.fasterxml.jackson.databind.ObjectMapper;
-import com.fasterxml.jackson.databind.node.ObjectNode;
+import com.example.avro.EnergyData;
+import com.example.avro.RedisAggData;
 
 import io.confluent.kafka.streams.serdes.avro.GenericAvroSerde;
+import io.confluent.kafka.streams.serdes.avro.SpecificAvroSerde;
 
 public class App {
     private static final Logger logger = LoggerFactory.getLogger(App.class);
 
-    static final String SENSOR_INPUT_TOPIC = "db.public.HourlySummary";
-    static final String SENSOR_OUTPUT_TOPIC = "redis.HourlySummary";
-
-    // Reuse a single ObjectMapper instance
-    private static final ObjectMapper OBJECT_MAPPER = new ObjectMapper();
-
-    // Greece Athens timezone
-    private static final ZoneId GREECE_ATHENS_ZONE = ZoneId.of("Europe/Athens");
+    static final String SENSOR_INPUT_TOPIC = "db.public.hourlydata";
+    static final String SENSOR_OUTPUT_TOPIC = "redis.aggdata";
 
     public static void main(String[] args) {
         logger.info("Starting Kafka Streams application...");
@@ -68,6 +67,12 @@ public class App {
         final GenericAvroSerde valueSerde = new GenericAvroSerde();
         valueSerde.configure(serdeConfig, false);
 
+        final SpecificAvroSerde<RedisAggData> redisValueSerde = new SpecificAvroSerde<>();
+        redisValueSerde.configure(serdeConfig, false);
+
+        final SpecificAvroSerde<EnergyData> energyValueSerde = new SpecificAvroSerde<>();
+        energyValueSerde.configure(serdeConfig, false);
+
         final Serde<String> keySerde = Serdes.String();
 
         try {
@@ -75,11 +80,9 @@ public class App {
                     Consumed.with(keySerde, valueSerde));
 
             // Convert directly to KTable without intermediate topic
-            KTable<String, String> table = stream
+            KTable<String, EnergyData> table = stream
                     .map((oldKey, value) -> {
-                        logger.debug("Processing record with key: {}", oldKey);
                         if (value == null) {
-                            logger.warn("Received null value for key: {}", oldKey);
                             return new KeyValue<>(null, null);
                         }
 
@@ -104,7 +107,7 @@ public class App {
                             logger.warn("No 'hour_bucket' field found in 'after' record");
                             return new KeyValue<>(null, null);
                         }
-                        String hourTimestamp = hourBucketObj.toString();
+                        Long hourTimestamp = (Long) hourBucketObj;
 
                         // Extract value from the nested record
                         Object energyObj = after.get("energy_total");
@@ -117,12 +120,12 @@ public class App {
                         // Parse the ISO timestamp and convert to Greece Athens timezone
                         String hourOfDay;
                         try {
-                            OffsetDateTime dateTime = OffsetDateTime.parse(hourTimestamp,
-                                    DateTimeFormatter.ISO_OFFSET_DATE_TIME);
+                            Long secondsSinceEpoch = hourTimestamp / 1_000_000;
+                            Long nanosAdjustment = (hourTimestamp % 1_000_000) * 1000;
+                            Instant instant = Instant.ofEpochSecond(secondsSinceEpoch, nanosAdjustment);
 
-                            // Convert to Greece Athens timezone
-                            ZonedDateTime greeceTime = dateTime.atZoneSameInstant(GREECE_ATHENS_ZONE);
-                            hourOfDay = String.format("%02d", greeceTime.getHour()); // always 2 digits
+                            ZonedDateTime greeceTime = instant.atZone(ZoneId.of("Europe/Athens"));
+                            hourOfDay = String.format("%02d", greeceTime.getHour());
 
                             logger.debug("Original timestamp: {}, Greece Athens time: {}, Hour: {}",
                                     hourTimestamp, greeceTime, hourOfDay);
@@ -134,16 +137,16 @@ public class App {
                         String newKey = sensor + "|" + hourOfDay;
                         logger.debug("Created new key: {}", newKey);
 
-                        ObjectNode newValue = OBJECT_MAPPER.createObjectNode();
-                        newValue.put("hour_bucket", hourOfDay);
-                        newValue.put("energy", energy);
+                        EnergyData newValue = new EnergyData();
+                        newValue.setSensor(sensor);
+                        newValue.setHour(hourOfDay);
+                        newValue.setEnergy(energy);
 
-                        String jsonString = newValue.toString();
-                        return new KeyValue<>(newKey, jsonString);
+                        return new KeyValue<>(newKey, newValue);
                     })
-                    .toTable(Materialized.with(Serdes.String(), Serdes.String()));
+                    .toTable(Materialized.with(Serdes.String(), energyValueSerde));
 
-            KStream<String, String> jsonStream = table.toStream()
+            KStream<String, EnergyData> jsonStream = table.toStream()
                     .map((key, value) -> {
                         if (key == null || value == null) {
                             return new KeyValue<>(null, null);
@@ -160,27 +163,25 @@ public class App {
                         return new KeyValue<>(sensor, value);
                     });
 
-            KTable<String, String> aggregated = jsonStream
-                    .groupByKey()
+            KTable<String, RedisAggData> aggregated = jsonStream
+                    .groupByKey(Grouped.with(Serdes.String(), energyValueSerde))
                     .aggregate(
-                            () -> "{}",
-                            (sensor, json, aggregate) -> {
+                            () -> new RedisAggData(null, new HashMap<CharSequence, Double>()),
+                            (sensor, energyData, aggregate) -> {
                                 try {
-                                    JsonNode newNode = OBJECT_MAPPER.readTree(json);
-                                    String hourBucket = newNode.get("hour_bucket").asText();
-                                    double energy = newNode.get("energy").asDouble();
-                                    ObjectNode result = (ObjectNode) OBJECT_MAPPER.readTree(aggregate);
-                                    result.put(hourBucket, energy);
-
-                                    return OBJECT_MAPPER.writeValueAsString(result);
+                                    String hourBucket = energyData.getHour().toString();
+                                    double energy = energyData.getEnergy();
+                                    aggregate.setSensor(sensor);
+                                    aggregate.getData().put(hourBucket, energy);
+                                    return aggregate;
                                 } catch (Exception e) {
-                                    logger.error("Failed to aggregate JSON for sensor: {}", sensor, e);
+                                    logger.error("Failed to aggregate results for sensor: {}", sensor, e);
                                     return aggregate;
                                 }
                             },
-                            Materialized.with(Serdes.String(), Serdes.String()));
+                            Materialized.with(Serdes.String(), redisValueSerde));
 
-            aggregated.toStream().to(SENSOR_OUTPUT_TOPIC, Produced.with(Serdes.String(), Serdes.String()));
+            aggregated.toStream().to(SENSOR_OUTPUT_TOPIC, Produced.with(Serdes.String(), redisValueSerde));
 
             KafkaStreams streams = new KafkaStreams(builder.build(), props);
 

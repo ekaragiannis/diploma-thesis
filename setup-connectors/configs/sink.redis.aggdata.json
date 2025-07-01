@@ -7,7 +7,7 @@
     "redis.uri": "${file:/secrets/properties:REDIS_URI}",
     "redis.command": "JSONSET",
     "key.converter": "org.apache.kafka.connect.storage.StringConverter",
-    "value.converter": "org.apache.kafka.connect.json.JsonConverter",
-    "value.converter.schemas.enable": "false"
+    "value.converter": "io.confluent.connect.avro.AvroConverter",
+    "value.converter.schema.registry.url": "${file:/secrets/properties:KAFKA_SCHEMA_REGISTRY}"
   }
 }

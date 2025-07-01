@@ -1,0 +1,10 @@
+{
+  "type": "record",
+  "name": "EnergyData",
+  "namespace": "com.example.avro",
+  "fields": [
+    {"name": "sensor", "type": "string"},
+    {"name": "energy", "type": "double"},
+    {"name": "hour", "type": "string"}
+  ]
+} 

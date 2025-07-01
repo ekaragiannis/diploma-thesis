@@ -213,32 +213,25 @@ services:
       connect:
         condition: service_healthy
 
-  # db-redis-streams:
-  #   build:
-  #     context: .
-  #     dockerfile: db-redis-streams/Dockerfile
-  #   env_file:
-  #     - .env
-  #   container_name: db-redis-streams
-  #   depends_on:
-  #     broker:
-  #       condition: service_healthy
-  #     schema-registry:
-  #       condition: service_healthy
-  #     connect:
-  #       condition: service_healthy
-  #     kafka-rest-proxy:
-  #       condition: service_started
-  #   environment:
-  #     KAKFA_BOOTSTRAP: ${KAFKA_BOOTSTRAP}
-  #     KAFKA_SCHEMA_REGISTRY: ${KAFKA_SCHEMA_REGISTRY}
-  #   restart: unless-stopped
-  #   healthcheck:
-  #     test: [ "CMD", "pgrep", "-f", "java" ]
-  #     interval: 30s
-  #     timeout: 10s
-  #     retries: 3
-  #     start_period: 60s
+  db-redis-streams:
+    build:
+      context: .
+      dockerfile: db-redis-streams/Dockerfile
+    env_file:
+      - .env
+    container_name: db-redis-streams
+    depends_on:
+      broker:
+        condition: service_healthy
+      schema-registry:
+        condition: service_healthy
+      connect:
+        condition: service_healthy
+      kafka-rest-proxy:
+        condition: service_started
+    environment:
+      KAKFA_BOOTSTRAP: ${KAFKA_BOOTSTRAP}
+      KAFKA_SCHEMA_REGISTRY: ${KAFKA_SCHEMA_REGISTRY}
 
   mqtt-db-streams:
     build:
