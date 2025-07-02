@@ -6,6 +6,7 @@
     "topics": "redis.aggdata",
     "redis.uri": "${file:/secrets/properties:REDIS_URI}",
     "redis.command": "JSONSET",
+    "redis.key": "sensor",
     "key.converter": "org.apache.kafka.connect.storage.StringConverter",
     "value.converter": "io.confluent.connect.avro.AvroConverter",
     "value.converter.schema.registry.url": "${file:/secrets/properties:KAFKA_SCHEMA_REGISTRY}"
