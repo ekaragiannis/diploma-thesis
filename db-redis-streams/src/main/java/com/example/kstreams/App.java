@@ -1,12 +1,8 @@
 package com.example.kstreams;
 
 import java.time.Instant;
-import java.time.LocalDateTime;
-import java.time.OffsetDateTime;
 import java.time.ZoneId;
-import java.time.ZoneOffset;
 import java.time.ZonedDateTime;
-import java.time.format.DateTimeFormatter;
 import java.util.HashMap;
 import java.util.Map;
 import java.util.Properties;
@@ -49,7 +45,7 @@ public class App {
         String schemaRegistryUrl = System.getenv().getOrDefault("KAFKA_SCHEMA_REGISTRY", "http://schema-registry:8081");
 
         Properties props = new Properties();
-        props.put(StreamsConfig.APPLICATION_ID_CONFIG, "kafka-streams-app");
+        props.put(StreamsConfig.APPLICATION_ID_CONFIG, "db-redis-streams");
         props.put(StreamsConfig.BOOTSTRAP_SERVERS_CONFIG, kafkaBootstrapServers);
         props.put(StreamsConfig.PROCESSING_GUARANTEE_CONFIG, StreamsConfig.EXACTLY_ONCE_V2);
         props.put(StreamsConfig.DEFAULT_KEY_SERDE_CLASS_CONFIG, Serdes.String().getClass().getName());
@@ -76,10 +72,14 @@ public class App {
         final Serde<String> keySerde = Serdes.String();
 
         try {
+            // Read the data produced by debezium
             KStream<String, GenericRecord> stream = builder.stream(SENSOR_INPUT_TOPIC,
                     Consumed.with(keySerde, valueSerde));
 
-            // Convert directly to KTable without intermediate topic
+            // For each record, extract key and hour from value and add a key composed by
+            // these fields. Because of kafka table, the next event with the same pair will
+            // overwrite the previous one. In that way, we have the latest energy sum for
+            // each sensor and hour.
             KTable<String, EnergyData> table = stream
                     .map((oldKey, value) -> {
                         if (value == null) {
@@ -123,8 +123,9 @@ public class App {
                             Long secondsSinceEpoch = hourTimestamp / 1_000_000;
                             Long nanosAdjustment = (hourTimestamp % 1_000_000) * 1000;
                             Instant instant = Instant.ofEpochSecond(secondsSinceEpoch, nanosAdjustment);
-
                             ZonedDateTime greeceTime = instant.atZone(ZoneId.of("Europe/Athens"));
+
+                            // Extract hour of day and format it to 2 digits (00, 01, 02, etc.)
                             hourOfDay = String.format("%02d", greeceTime.getHour());
 
                             logger.debug("Original timestamp: {}, Greece Athens time: {}, Hour: {}",
@@ -146,6 +147,7 @@ public class App {
                     })
                     .toTable(Materialized.with(Serdes.String(), energyValueSerde));
 
+            // Convert the KTable to a KStream. Keep only the sensor name as key
             KStream<String, EnergyData> jsonStream = table.toStream()
                     .map((key, value) -> {
                         if (key == null || value == null) {
@@ -163,6 +165,8 @@ public class App {
                         return new KeyValue<>(sensor, value);
                     });
 
+            // For each sensor, construct a map with the hour as key and the energy
+            // consumption for that hour as value.
             KTable<String, RedisAggData> aggregated = jsonStream
                     .groupByKey(Grouped.with(Serdes.String(), energyValueSerde))
                     .aggregate(

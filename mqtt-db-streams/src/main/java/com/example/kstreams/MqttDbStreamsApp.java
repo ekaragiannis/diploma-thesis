@@ -36,7 +36,7 @@ public class MqttDbStreamsApp {
     String schemaRegistryUrl = System.getenv().getOrDefault("KAFKA_SCHEMA_REGISTRY", "http://schema-registry:8081");
 
     Properties props = new Properties();
-    props.put(StreamsConfig.APPLICATION_ID_CONFIG, "mqtt-db-streams-app");
+    props.put(StreamsConfig.APPLICATION_ID_CONFIG, "mqtt-db-streams");
     props.put(StreamsConfig.BOOTSTRAP_SERVERS_CONFIG, kafkaBootstrapServers);
     props.put(StreamsConfig.PROCESSING_GUARANTEE_CONFIG, StreamsConfig.EXACTLY_ONCE_V2);
     props.put(StreamsConfig.DEFAULT_KEY_SERDE_CLASS_CONFIG, Serdes.String().getClass().getName());
@@ -59,9 +59,13 @@ public class MqttDbStreamsApp {
     final Serde<String> keySerde = Serdes.String();
 
     try {
+      // Read the data produced by MQTT
       KStream<String, MqttRawData> stream = builder.stream(MQTT_INPUT_TOPIC,
           Consumed.with(keySerde, mqttValueSerde));
 
+      // Each record has a key with the input mqtt topic. From topic, extract the
+      // sensor name and use it as new key. Also, add the sensor name to value, in
+      // order for the jdbc sink connector to insert it in the database.
       KStream<String, DbRawData> processedStream = stream
           .map((key, value) -> {
             logger.debug("Processing MQTT record with key: {}", key);
@@ -103,7 +107,6 @@ public class MqttDbStreamsApp {
           })
           .filter((key, value) -> key != null && value != null);
 
-      // Send to database output topic
       processedStream.to(DB_OUTPUT_TOPIC, Produced.with(Serdes.String(), dbValueSerde));
 
       KafkaStreams streams = new KafkaStreams(builder.build(), props);
