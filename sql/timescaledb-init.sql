@@ -19,7 +19,7 @@ GROUP BY
 
 
 SELECT add_continuous_aggregate_policy('hourlydata',
-    start_offset => INTERVAL '1 hour',
+    start_offset => INTERVAL '1 day',
     end_offset   => NULL,
     schedule_interval => INTERVAL '10 minutes');
 
