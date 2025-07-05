@@ -1,4 +1,5 @@
 import redis
+import os
 from typing import Optional, Dict
 
 
@@ -32,7 +33,7 @@ class RedisService:
         Returns:
             Optional[Dict[str, float]]: A dictionary containing hourly energy data
                 where keys are hours (00-23 as strings) and values are energy
-                consumption in kWh as floats. Returns None if no data is found
+                consumption in kWh as floats, sorted by hour. Returns None if no data is found
                 or if an error occurs.
 
         """
@@ -40,7 +41,11 @@ class RedisService:
             # Try to get data from Redis using JSON.GET command
             cached_data = self.redis_client.json().get(f"sensor:{sensor}")
             if cached_data and isinstance(cached_data, dict) and 'data' in cached_data:
-                return cached_data.get('data')
+                data = cached_data.get('data')
+                if data and isinstance(data, dict):
+                    # Sort the data by hour keys (00-23)
+                    return dict(sorted(data.items(), key=lambda x: x[0]))
+                return data
             return None
         except Exception as e:
             print(f"Error retrieving data from Redis: {e}")
@@ -61,5 +66,9 @@ class RedisService:
             return False
 
 
-# Create a global Redis service instance
-redis_service = RedisService()
+# Create a global Redis service instance with environment variables
+redis_service = RedisService(
+    host=os.getenv('REDIS_HOST', 'localhost'),
+    port=int(os.getenv('REDIS_PORT', 6379)),
+    db=int(os.getenv('REDIS_DB', 0))
+)
