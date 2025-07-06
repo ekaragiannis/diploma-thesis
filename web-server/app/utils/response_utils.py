@@ -12,10 +12,8 @@ def format_data_for_response(raw_data: list[Dict[str, Any]]):
     Returns:
         dict: Formatted data with hour keys (00-23) and energy values
     """
-    # Sort raw_data by hour_bucket before processing, so that the hours are in order
-    sorted_data = sorted(raw_data, key=lambda x: x.get('hour_bucket', ''))
     formatted_data = {}
-    for row in sorted_data:
+    for row in raw_data:
         hour_bucket = row.get('hour_bucket')
         if hour_bucket:
             # Convert to Athens timezone
@@ -23,7 +21,8 @@ def format_data_for_response(raw_data: list[Dict[str, Any]]):
             hour = athens_time.strftime('%H')
             value = row.get('energy_total', 0)
             formatted_data[hour] = value
-    return formatted_data
+    sorted_data = dict(sorted(formatted_data.items(), key=lambda x: x[0]))
+    return sorted_data
 
 
 def format_rawdata_for_response(raw_data: list[Dict[str, Any]]):

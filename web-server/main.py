@@ -1,5 +1,7 @@
 from fastapi import FastAPI, HTTPException
+from fastapi.middleware.cors import CORSMiddleware
 from app.routers.sensor_data import router as sensor_data_router
+from app.routers.sensor import router as sensor_router
 from app.middleware import ExecutionTimeMiddleware
 from app.services.db_service import get_db_connection
 from app.services.redis_service import redis_service
@@ -11,10 +13,22 @@ load_dotenv()
 
 app = FastAPI(title="Web Server API", version="1.0.0")
 
+# Add CORS middleware
+app.add_middleware(
+    CORSMiddleware,
+    # Update this if your frontend runs elsewhere
+    allow_origins=["http://localhost:5173"],
+    allow_credentials=True,
+    allow_methods=["*"],
+    allow_headers=["*"],
+)
+
 # Add execution time middleware
 app.add_middleware(ExecutionTimeMiddleware)
 
+# Add routers
 app.include_router(sensor_data_router)
+app.include_router(sensor_router)
 
 
 @app.get("/health")
