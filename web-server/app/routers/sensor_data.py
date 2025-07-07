@@ -13,13 +13,13 @@ class SensorDataResponse(BaseModel):
     """Response model for sensor data endpoints."""
     sensor: str
     data: Dict[str, Any]
-    execution_time: Optional[str] = None
+    execution_time: Optional[float] = None
 
 
 class ErrorResponse(BaseModel):
     """Error response model."""
     detail: str
-    execution_time: Optional[str] = None
+    execution_time: Optional[float] = None
 
 
 @router.get("/{sensor}/raw", response_model=SensorDataResponse, responses={404: {"model": ErrorResponse}})

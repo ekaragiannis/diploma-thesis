@@ -35,7 +35,7 @@ class ExecutionTimeMiddleware(BaseHTTPMiddleware):
 
 
 # Helper function to calculate execution time in routes
-def get_execution_time(request: Request) -> str:
+def get_execution_time(request: Request) -> float:
     """
     Helper function to retrieve the current execution time for a request.
     Can be used inside route handlers for debugging or logging.
@@ -44,9 +44,9 @@ def get_execution_time(request: Request) -> str:
         request: FastAPI request object.
 
     Returns:
-        Execution time as a formatted string in milliseconds.
+        Execution time as a float in milliseconds.
     """
     if hasattr(request.state, 'start_time'):
         execution_time_ms = (time.time() - request.state.start_time) * 1000
-        return f"{execution_time_ms:.2f}ms"
-    return "0.00ms"
+        return round(execution_time_ms, 2)
+    return 0.00
