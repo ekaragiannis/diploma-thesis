@@ -5,6 +5,7 @@ interface ButtonProps {
   onClick: () => void;
   disabled?: boolean;
   style?: React.CSSProperties;
+  type?: 'button' | 'submit' | 'reset';
 }
 
 const StyledButton = styled.button`
@@ -29,9 +30,15 @@ const Button = ({
   disabled = false,
   children,
   style,
+  type = 'button',
 }: PropsWithChildren<ButtonProps>) => {
   return (
-    <StyledButton onClick={onClick} disabled={disabled} style={style}>
+    <StyledButton
+      onClick={onClick}
+      disabled={disabled}
+      style={style}
+      type={type}
+    >
       {children}
     </StyledButton>
   );

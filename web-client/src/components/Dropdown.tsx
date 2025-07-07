@@ -21,6 +21,7 @@ const StyledDropdown = styled.select`
   border-radius: ${({ theme }) => theme.borderRadius};
   padding: ${({ theme }) => theme.spacing(2)} ${({ theme }) => theme.spacing(4)};
   cursor: pointer;
+  font-family: 'Inter', sans-serif;
   font-weight: 600;
   &:hover {
     background: ${({ theme }) => theme.colors.primaryHover};

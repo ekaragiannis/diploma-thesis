@@ -13,6 +13,8 @@ const customStyles = (theme: Theme): TableStyles => ({
   },
   headRow: {
     style: {
+      fontSize: '1rem',
+      fontWeight: 600,
       border: 'none',
     },
   },

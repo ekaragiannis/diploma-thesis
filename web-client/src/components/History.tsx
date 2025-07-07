@@ -1,6 +1,7 @@
 import styled from '@emotion/styled';
 import { useHistory } from '../hooks/useHistory';
 import Button from './Button';
+import HistoryListItem from './HistoryListItem';
 
 const HistoryHeader = styled.div`
   font-size: 1rem;
@@ -32,30 +33,15 @@ const HistoryContainer = styled.div`
   padding: 24px;
 `;
 
-const HistoryItem = styled.li`
-  padding: 8px 0;
-  border-bottom: 1px solid ${({ theme }) => theme.colors.border};
-  color: ${({ theme }) => theme.colors.text};
-`;
-
-const HistoryItemSecondary = styled.div`
-  font-size: 0.8rem;
+const EmptyState = styled.li`
   color: ${({ theme }) => theme.colors.textSecondary};
-`;
-
-const HistoryItemContent = styled.div`
-  display: flex;
-  flex-direction: row;
-  justify-content: space-between;
-  align-items: center;
+  font-style: italic;
+  padding: 12px 0;
+  text-align: center;
 `;
 
 const History = () => {
   const { history, clearHistory } = useHistory();
-
-  const formatTimestamp = (timestamp: number) => {
-    return new Date(timestamp).toLocaleString();
-  };
 
   return (
     <HistoryContainer>
@@ -65,22 +51,10 @@ const History = () => {
       </HistoryHeader>
       <HistoryList>
         {history.length === 0 ? (
-          <li style={{ color: '#a3a3a3', fontStyle: 'italic' }}>
-            No requests made yet
-          </li>
+          <EmptyState>No requests made yet</EmptyState>
         ) : (
           history.map((request) => (
-            <HistoryItem key={request.id}>
-              <HistoryItemContent>
-                <div>
-                  {request.sensor} - {request.dataType}
-                </div>
-                <div>{request.execution_time} ms</div>
-                <HistoryItemSecondary>
-                  {formatTimestamp(request.timestamp)}
-                </HistoryItemSecondary>
-              </HistoryItemContent>
-            </HistoryItem>
+            <HistoryListItem key={request.id} request={request} />
           ))
         )}
       </HistoryList>
