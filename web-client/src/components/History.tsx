@@ -77,7 +77,7 @@ const History = () => {
                 <div>
                   {request.sensor} - {request.dataType}
                 </div>
-                <div>{request.execution_time}</div>
+                <div>{request.execution_time} ms</div>
                 <HistoryItemSecondary>
                   {formatTimestamp(request.timestamp)}
                 </HistoryItemSecondary>

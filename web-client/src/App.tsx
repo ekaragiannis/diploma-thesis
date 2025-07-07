@@ -52,7 +52,7 @@ function App() {
             <SelectOptions onRunClick={setResults} />
             {results && (
               <>
-                <p>Execution time: {results.execution_time}</p>
+                <p>Execution time: {results.execution_time} ms</p>
                 <Results rows={rows} />
               </>
             )}
