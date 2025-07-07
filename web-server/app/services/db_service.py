@@ -78,3 +78,25 @@ def fetch_rawdata_last_24h(sensor):
     cur.close()
     conn.close()
     return data
+
+
+def fetch_sensor_names():
+    """
+    Fetch all sensor names from the database.
+
+    Returns:
+        list: A list of sensor names as strings.
+    """
+    conn = get_db_connection()
+    cur = conn.cursor()
+    query = "SELECT DISTINCT sensor FROM rawdata;"
+    cur.execute(query)
+    rows = cur.fetchall()
+    print(rows)
+    if not rows or cur.description is None:
+        return []
+    cur.close()
+    conn.close()
+    # Extract sensor names from the rows and return as a simple list
+    sensor_names = [row[0] for row in rows]
+    return sensor_names
