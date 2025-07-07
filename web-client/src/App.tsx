@@ -1,9 +1,8 @@
 import styled from '@emotion/styled';
-import { useState } from 'react';
 import History from './components/History';
 import Results from './components/Results';
-import SelectOptions, { type SensorData } from './components/SelectOptions';
-import { RequestHistoryProvider } from './context/RequestHistoryContext';
+import SelectOptions from './components/SelectOptions';
+import { useResultsStore } from './stores/resultsStore';
 
 const LeftPanel = styled.div`
   flex-grow: 1;
@@ -35,34 +34,25 @@ const LeftPanelContent = styled.div`
 `;
 
 function App() {
-  const [results, setResults] = useState<SensorData | null>(null);
-
-  const rows = results
-    ? Object.entries(results.data).map(([hour, energy]) => ({
-        hour,
-        energy: Number(energy),
-      }))
-    : [];
+  const { results } = useResultsStore();
 
   return (
-    <RequestHistoryProvider>
-      <Layout>
-        <LeftPanel>
-          <LeftPanelContent>
-            <SelectOptions onRunClick={setResults} />
-            {results && (
-              <>
-                <p>Execution time: {results.execution_time} ms</p>
-                <Results rows={rows} />
-              </>
-            )}
-          </LeftPanelContent>
-        </LeftPanel>
-        <RightPanel>
-          <History />
-        </RightPanel>
-      </Layout>
-    </RequestHistoryProvider>
+    <Layout>
+      <LeftPanel>
+        <LeftPanelContent>
+          <SelectOptions />
+          {results && (
+            <>
+              <p>Execution time: {results.execution_time} ms</p>
+              <Results />
+            </>
+          )}
+        </LeftPanelContent>
+      </LeftPanel>
+      <RightPanel>
+        <History />
+      </RightPanel>
+    </Layout>
   );
 }
 

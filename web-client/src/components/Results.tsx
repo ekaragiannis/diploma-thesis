@@ -1,13 +1,7 @@
 import type { Theme } from '@emotion/react';
 import { useTheme } from '@emotion/react';
 import DataTable, { type TableStyles } from 'react-data-table-component';
-
-interface ResultsProps {
-  rows: {
-    hour: string;
-    energy: number;
-  }[];
-}
+import { useResultsStore } from '../stores/resultsStore';
 
 const customStyles = (theme: Theme): TableStyles => ({
   table: {
@@ -45,8 +39,17 @@ const customStyles = (theme: Theme): TableStyles => ({
   },
 });
 
-const Results = ({ rows: results }: ResultsProps) => {
+const Results = () => {
+  const { results } = useResultsStore();
   const theme = useTheme();
+
+  const rows = results
+    ? Object.entries(results.data).map(([hour, energy]) => ({
+        hour,
+        energy: Number(energy),
+      }))
+    : [];
+
   return (
     <DataTable
       customStyles={customStyles(theme)}
@@ -55,7 +58,7 @@ const Results = ({ rows: results }: ResultsProps) => {
         { name: 'Hour', selector: (row) => row.hour, sortable: true },
         { name: 'Energy', selector: (row) => row.energy, sortable: true },
       ]}
-      data={results}
+      data={rows}
     />
   );
 };

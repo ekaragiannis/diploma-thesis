@@ -1,19 +1,11 @@
 import styled from '@emotion/styled';
-import { useEffect, useState } from 'react';
-import { useRequestHistory } from '../context/RequestHistoryContext';
-import api from '../services/api';
+import { useHistory } from '../hooks/useHistory';
+import { useSensorSelectionStore } from '../stores/sensorSelectionStore';
+import { useResultsStore } from '../stores/resultsStore';
+import { useSensors } from '../queries/useSensors';
+import { useSensorData } from '../queries/useSensorData';
 import Button from './Button';
 import Dropdown from './Dropdown';
-
-interface SelectOptionsProps {
-  onRunClick: (data: SensorData) => void;
-}
-
-export interface SensorData {
-  sensor: string;
-  data: Record<string, number>;
-  execution_time: number;
-}
 
 const StyledDiv = styled.div`
   display: flex;
@@ -22,54 +14,65 @@ const StyledDiv = styled.div`
   gap: ${({ theme }) => theme.spacing(8)};
 `;
 
-const SelectOptions = ({ onRunClick }: SelectOptionsProps) => {
-  const [sensorNames, setSensorNames] = useState<string[]>([]);
-  const [selectedSensor, setSelectedSensor] = useState<string>('');
-  const [selectedDataType, setSelectedDataType] = useState<
-    'cached' | 'hourly' | 'raw' | ''
-  >('');
-  const [isLoading, setIsLoading] = useState<boolean>(false);
+const SelectOptions = () => {
+  // Zustand stores
+  const {
+    selectedSensor,
+    selectedDataType,
+    setSelectedSensor,
+    setSelectedDataType,
+  } = useSensorSelectionStore();
+  const { setResults } = useResultsStore();
 
-  useEffect(() => {
-    const fetchSensors = async () => {
-      try {
-        const response = await api.get<{ sensors: string[] }>('/sensors');
-        setSensorNames(response.data.sensors);
-      } catch (error) {
-        console.error('Error fetching sensors:', error);
-        setSensorNames([]);
-      }
-    };
+  // TanStack Query
+  const {
+    data: sensorsData,
+    isLoading: sensorsLoading,
+    error: sensorsError,
+  } = useSensors();
+  const sensorNames = sensorsData?.sensors || [];
+  const {
+    isLoading: sensorDataLoading,
+    error: sensorDataError,
+    refetch: refetchSensorData,
+  } = useSensorData(
+    selectedSensor,
+    selectedDataType as 'cached' | 'hourly' | 'raw'
+  );
 
-    fetchSensors();
-  }, []);
-
-  const { addRequest } = useRequestHistory();
+  const { addRecord } = useHistory();
 
   const handleRunClick = async () => {
     if (!selectedSensor || !selectedDataType) {
       alert('Please select both a sensor and data type');
       return;
     }
-
-    setIsLoading(true);
     try {
-      const response = await api.get<SensorData>(
-        `/sensor-data/${selectedSensor}/${selectedDataType}`
-      );
-      onRunClick(response.data);
-      addRequest(
-        selectedSensor,
-        selectedDataType,
-        response.data.execution_time
-      );
+      const result = await refetchSensorData();
+      if (result.data) {
+        setResults(result.data);
+        addRecord(selectedSensor, selectedDataType, result.data.execution_time);
+      }
     } catch (error) {
       console.error('Error fetching sensor data:', error);
       alert('Failed to fetch sensor data. Please try again.');
-    } finally {
-      setIsLoading(false);
     }
   };
+
+  if (sensorsError) {
+    return (
+      <StyledDiv>
+        <div>Error loading sensors: {sensorsError.message}</div>
+      </StyledDiv>
+    );
+  }
+  if (sensorDataError) {
+    return (
+      <StyledDiv>
+        <div>Error loading sensor data: {sensorDataError.message}</div>
+      </StyledDiv>
+    );
+  }
 
   return (
     <StyledDiv>
@@ -77,7 +80,7 @@ const SelectOptions = ({ onRunClick }: SelectOptionsProps) => {
         id="sensor-select"
         label="Sensor"
         options={sensorNames.map((name) => ({ label: name, value: name }))}
-        onSelectionChange={(value) => setSelectedSensor(value)}
+        onSelectionChange={setSelectedSensor}
       />
       <Dropdown
         id="data-type-select"
@@ -95,9 +98,14 @@ const SelectOptions = ({ onRunClick }: SelectOptionsProps) => {
       />
       <Button
         onClick={handleRunClick}
-        disabled={isLoading || !selectedSensor || !selectedDataType}
+        disabled={
+          !selectedSensor ||
+          !selectedDataType ||
+          sensorsLoading ||
+          sensorDataLoading
+        }
       >
-        {isLoading ? 'Loading...' : 'Run'}
+        {sensorDataLoading ? 'Loading...' : 'Run'}
       </Button>
     </StyledDiv>
   );

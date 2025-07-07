@@ -1,5 +1,5 @@
 import styled from '@emotion/styled';
-import { useRequestHistory } from '../context/RequestHistoryContext';
+import { useHistory } from '../hooks/useHistory';
 import Button from './Button';
 
 const HistoryHeader = styled.div`
@@ -51,7 +51,7 @@ const HistoryItemContent = styled.div`
 `;
 
 const History = () => {
-  const { state, clearHistory } = useRequestHistory();
+  const { history, clearHistory } = useHistory();
 
   const formatTimestamp = (timestamp: number) => {
     return new Date(timestamp).toLocaleString();
@@ -60,18 +60,16 @@ const History = () => {
   return (
     <HistoryContainer>
       <HistoryHeader>
-        <h3>History ({state.history.length})</h3>
-        {state.history.length > 0 && (
-          <Button onClick={clearHistory}>Clear</Button>
-        )}
+        <h3>History ({history.length})</h3>
+        {history.length > 0 && <Button onClick={clearHistory}>Clear</Button>}
       </HistoryHeader>
       <HistoryList>
-        {state.history.length === 0 ? (
+        {history.length === 0 ? (
           <li style={{ color: '#a3a3a3', fontStyle: 'italic' }}>
             No requests made yet
           </li>
         ) : (
-          state.history.map((request: any) => (
+          history.map((request) => (
             <HistoryItem key={request.id}>
               <HistoryItemContent>
                 <div>
