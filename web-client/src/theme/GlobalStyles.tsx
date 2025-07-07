@@ -1,5 +1,6 @@
 // GlobalStyles.tsx
 import { Global, css } from '@emotion/react';
+import '@fontsource/inter/400.css';
 
 const GlobalStyles = () => (
   <Global
@@ -20,6 +21,10 @@ const GlobalStyles = () => (
         color: white;
         height: 100%;
         overflow-x: hidden;
+      }
+
+      body {
+        font-family: 'Inter', sans-serif;
       }
     `}
   />
