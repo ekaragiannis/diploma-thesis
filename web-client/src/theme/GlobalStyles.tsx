@@ -2,6 +2,9 @@
 import { Global, css } from '@emotion/react';
 import '@fontsource/inter/400.css';
 
+/**
+ * Global styles for the application
+ */
 const GlobalStyles = () => (
   <Global
     styles={css`

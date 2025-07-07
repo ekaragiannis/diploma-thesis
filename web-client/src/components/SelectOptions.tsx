@@ -1,12 +1,15 @@
 import styled from '@emotion/styled';
 import { useHistory } from '../hooks/useHistory';
-import { useSensorSelectionStore } from '../stores/sensorSelectionStore';
-import { useResultsStore } from '../stores/resultsStore';
-import { useSensors } from '../queries/useSensors';
 import { useSensorData } from '../queries/useSensorData';
+import { useSensors } from '../queries/useSensors';
+import { useResultsStore } from '../stores/resultsStore';
+import { useSensorSelectionStore } from '../stores/sensorSelectionStore';
 import Button from './Button';
 import Dropdown from './Dropdown';
 
+/**
+ * Container for the selection controls layout
+ */
 const StyledDiv = styled.div`
   display: flex;
   flex-direction: row;
@@ -14,8 +17,24 @@ const StyledDiv = styled.div`
   gap: ${({ theme }) => theme.spacing(8)};
 `;
 
+/**
+ * A component for selecting sensor parameters and triggering data fetching
+ *
+ * The component manages the selection of sensor and data type through
+ * the sensorSelectionStore, fetches available sensors using TanStack Query,
+ * and triggers data fetching when the Run button is clicked. Results are
+ * stored in the global resultsStore and history is automatically updated.
+ *
+ * @example
+ * ```tsx
+ * // The component automatically handles all state management
+ * <SelectOptions />
+ * ```
+ *
+ * @returns A form-like component with sensor selection controls
+ */
 const SelectOptions = () => {
-  // Zustand stores
+  // Zustand stores for global state management
   const {
     selectedSensor,
     selectedDataType,
@@ -24,7 +43,7 @@ const SelectOptions = () => {
   } = useSensorSelectionStore();
   const { setResults } = useResultsStore();
 
-  // TanStack Query
+  // TanStack Query hooks for data fetching
   const {
     data: sensorsData,
     isLoading: sensorsLoading,
@@ -42,6 +61,13 @@ const SelectOptions = () => {
 
   const { addRecord } = useHistory();
 
+  /**
+   * Handles the Run button click event
+   *
+   * Validates that both sensor and data type are selected,
+   * triggers the data fetch, and updates the global state
+   * with the results. Also adds the request to history.
+   */
   const handleRunClick = async () => {
     if (!selectedSensor || !selectedDataType) {
       alert('Please select both a sensor and data type');

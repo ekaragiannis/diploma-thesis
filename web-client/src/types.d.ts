@@ -9,3 +9,11 @@ export interface SensorDataResponse {
 export interface SensorsResponse {
   sensors: string[];
 }
+
+export interface RequestHistoryRecord {
+  id: string;
+  sensor: string;
+  dataType: string;
+  timestamp: number;
+  execution_time: number;
+}

@@ -4,6 +4,9 @@ import Results from './components/Results';
 import SelectOptions from './components/SelectOptions';
 import { useResultsStore } from './stores/resultsStore';
 
+/**
+ * Styled component for the left panel
+ */
 const LeftPanel = styled.div`
   flex-grow: 1;
   flex-basis: 0;
@@ -11,6 +14,9 @@ const LeftPanel = styled.div`
   height: 100%;
 `;
 
+/**
+ * Styled component for the right panel
+ */
 const RightPanel = styled.div`
   flex-grow: 0;
   flex-basis: 20%;
@@ -18,6 +24,9 @@ const RightPanel = styled.div`
   height: 100%;
 `;
 
+/**
+ * Styled component for the main layout
+ */
 const Layout = styled.div`
   display: flex;
   flex-direction: row;

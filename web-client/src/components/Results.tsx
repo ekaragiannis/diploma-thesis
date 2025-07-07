@@ -3,6 +3,12 @@ import { useTheme } from '@emotion/react';
 import DataTable, { type TableStyles } from 'react-data-table-component';
 import { useResultsStore } from '../stores/resultsStore';
 
+/**
+ * Custom table styles that adapt to the current theme
+ *
+ * @param theme - The current application theme
+ * @returns TableStyles object with themed styling
+ */
 const customStyles = (theme: Theme): TableStyles => ({
   table: {
     style: {
@@ -41,6 +47,13 @@ const customStyles = (theme: Theme): TableStyles => ({
   },
 });
 
+/**
+ * A data table component for displaying sensor results
+
+ * The component uses react-data-table-component for enhanced functionality
+ * including sorting, responsive design, and accessibility features.
+ 
+ */
 const Results = () => {
   const { results } = useResultsStore();
   const theme = useTheme();

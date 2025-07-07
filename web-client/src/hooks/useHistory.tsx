@@ -1,18 +1,10 @@
 import { useLocalStorage } from 'usehooks-ts';
-
-export interface RequestRecord {
-  id: string;
-  sensor: string;
-  dataType: string;
-  timestamp: number;
-  execution_time: number;
-}
+import type { RequestHistoryRecord } from '../types';
 
 export const useHistory = () => {
-  const [history, setHistory, clearHistory] = useLocalStorage<RequestRecord[]>(
-    'history',
-    []
-  );
+  const [history, setHistory, clearHistory] = useLocalStorage<
+    RequestHistoryRecord[]
+  >('history', []);
 
   const createRequestRecord = (
     sensor: string,

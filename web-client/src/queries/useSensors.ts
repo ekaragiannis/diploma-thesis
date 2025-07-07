@@ -5,6 +5,9 @@ export interface SensorsResponse {
   sensors: string[];
 }
 
+/**
+ * Fetches the list of available sensors from the API
+ */
 export const useSensors = () => {
   return useQuery({
     queryKey: ['sensors'],
@@ -12,6 +15,5 @@ export const useSensors = () => {
       const response = await api.get<SensorsResponse>('/sensors');
       return response.data;
     },
-    staleTime: 10 * 60 * 1000, // 10 minutes
   });
 };

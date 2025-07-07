@@ -1,4 +1,6 @@
-// src/theme.ts
+/**
+ * Theme configuration object for the application
+ */
 const theme = {
   colors: {
     background: '#171717', // dark background

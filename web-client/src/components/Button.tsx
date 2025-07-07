@@ -1,44 +1,51 @@
 import styled from '@emotion/styled';
-import type { PropsWithChildren } from 'react';
 
 interface ButtonProps {
+  /** The text content to display on the button */
+  children: React.ReactNode;
+  /** Click handler function */
   onClick: () => void;
+  /** Whether the button is disabled */
   disabled?: boolean;
-  style?: React.CSSProperties;
-  type?: 'button' | 'submit' | 'reset';
+  /** Additional CSS class name */
+  className?: string;
 }
 
-const StyledButton = styled.button`
-  background: ${({ theme }) => theme.colors.primary};
+/**
+ * Styled button component with consistent theming
+ */
+const StyledButton = styled.button<{ disabled?: boolean }>`
+  background: ${({ theme, disabled }) =>
+    disabled ? theme.colors.disabled : theme.colors.primary};
   color: ${({ theme }) => theme.colors.text};
   border: none;
   border-radius: ${({ theme }) => theme.borderRadius};
   padding: ${({ theme }) => theme.spacing(2)} ${({ theme }) => theme.spacing(4)};
-  cursor: pointer;
+  cursor: ${({ disabled }) => (disabled ? 'not-allowed' : 'pointer')};
   font-weight: 600;
+  transition: background-color 0.2s ease;
+
   &:hover {
-    background: ${({ theme }) => theme.colors.primaryHover};
+    background: ${({ theme, disabled }) =>
+      disabled ? theme.colors.disabled : theme.colors.primaryHover};
   }
-  &:disabled {
-    background: ${({ theme }) => theme.colors.disabled};
-    cursor: not-allowed;
+
+  &:active {
+    transform: ${({ disabled }) => (disabled ? 'none' : 'translateY(1px)')};
   }
 `;
 
+/**
+ * A reusable button component with consistent styling and behavior
+ */
 const Button = ({
+  children,
   onClick,
   disabled = false,
-  children,
-  style,
-  type = 'button',
-}: PropsWithChildren<ButtonProps>) => {
+  className,
+}: ButtonProps) => {
   return (
-    <StyledButton
-      onClick={onClick}
-      disabled={disabled}
-      style={style}
-      type={type}
-    >
+    <StyledButton onClick={onClick} disabled={disabled} className={className}>
       {children}
     </StyledButton>
   );
