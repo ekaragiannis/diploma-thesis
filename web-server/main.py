@@ -6,7 +6,6 @@ from app.middleware import ExecutionTimeMiddleware
 from app.services.db_service import get_db_connection
 from app.services.redis_service import redis_service
 from dotenv import load_dotenv
-import os
 
 # Load environment variables from .env file
 load_dotenv()
