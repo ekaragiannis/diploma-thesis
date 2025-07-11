@@ -1,21 +1,22 @@
-from datetime import timezone
+from datetime import datetime, timezone
 import pytz
 
 
-def convert_utc_to_athens(utc_datetime):
+def convert_utc_to_athens(utc_datetime: datetime) -> datetime:
     """
-    Convert UTC datetime to Athens timezone.
+    Convert a UTC datetime (naive or aware) to Athens timezone.
 
     Args:
-        utc_datetime: datetime object (naive or UTC timezone-aware)
+        utc_datetime (datetime): A datetime object (naive assumed as UTC, or UTC-aware)
 
     Returns:
-        datetime: Athens timezone datetime
+        datetime: Datetime converted to Europe/Athens timezone
     """
     athens_tz = pytz.timezone('Europe/Athens')
 
     # If naive datetime, assume UTC
-    if hasattr(utc_datetime, 'tzinfo') and utc_datetime.tzinfo is None:
+    if utc_datetime.tzinfo is None or utc_datetime.tzinfo.utcoffset(utc_datetime) is None:
         utc_datetime = utc_datetime.replace(tzinfo=timezone.utc)
 
+    # Convert to Athens timezone
     return utc_datetime.astimezone(athens_tz)

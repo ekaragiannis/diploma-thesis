@@ -2,6 +2,8 @@ package com.example.kstreams;
 
 import java.time.Duration;
 import java.time.Instant;
+import java.time.ZoneOffset;
+import java.time.format.DateTimeFormatter;
 import java.time.format.DateTimeParseException;
 import java.util.ArrayList;
 import java.util.Comparator;
@@ -165,7 +167,7 @@ public class App {
      * Converts a timestamp (microseconds since epoch) to a UTC ISO-8601 string.
      *
      * @param hourTimestamp The timestamp in microseconds since epoch
-     * @return The UTC timestamp string (e.g., '2024-06-01T14:00:00Z'), or null if
+     * @return The UTC timestamp string (e.g., '2024-06-01 14:00:00'), or null if
      *         conversion fails
      */
     private static String convertTimestampToUtcString(Long hourTimestamp) {
@@ -173,7 +175,8 @@ public class App {
             Long secondsSinceEpoch = hourTimestamp / 1_000_000;
             Long nanosAdjustment = (hourTimestamp % 1_000_000) * 1000;
             Instant instant = Instant.ofEpochSecond(secondsSinceEpoch, nanosAdjustment);
-            return instant.toString();
+            return DateTimeFormatter.ofPattern("yyyy-MM-dd HH:mm:ss").withZone(ZoneOffset.UTC)
+                    .format(instant);
         } catch (Exception e) {
             logger.error("Failed to parse timestamp: {}", hourTimestamp, e);
             return null;

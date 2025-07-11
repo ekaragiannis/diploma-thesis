@@ -135,6 +135,7 @@ public class MqttDbStreamsApp {
       }
 
       DbRawData dbRawData = new DbRawData();
+      dbRawData.setSensor(sensor);
       dbRawData.setEnergy(energy);
       dbRawData.setTimestamp(timestamp);
 

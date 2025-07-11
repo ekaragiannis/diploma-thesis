@@ -1,6 +1,6 @@
 import redis
 import os
-from typing import Optional, Dict
+from typing import Any, List, Optional, Dict
 
 
 class RedisService:
@@ -16,6 +16,7 @@ class RedisService:
     """
 
     def __init__(self, host: str = "localhost", port: int = 6379, db: int = 0):
+        print(host, port)
         self.redis_client = redis.Redis(
             host=host,
             port=port,
@@ -23,7 +24,7 @@ class RedisService:
             decode_responses=True
         )
 
-    def get_sensor_data(self, sensor: str) -> Optional[Dict[str, float]]:
+    def get_sensor_data(self, sensor: str) -> Optional[List[Any]]:
         """
         Retrieve cached sensor data from Redis for a specific sensor.
 
@@ -39,13 +40,9 @@ class RedisService:
         """
         try:
             # Try to get data from Redis using JSON.GET command
-            cached_data = self.redis_client.json().get(f"sensor:{sensor}")
+            cached_data = self.redis_client.json().get(sensor)
             if cached_data and isinstance(cached_data, dict) and 'data' in cached_data:
-                data = cached_data.get('data')
-                if data and isinstance(data, dict):
-                    # Sort the data by hour keys (00-23)
-                    return dict(sorted(data.items(), key=lambda x: x[0]))
-                return data
+                return cached_data.get('data')
             return None
         except Exception as e:
             print(f"Error retrieving data from Redis: {e}")
@@ -68,7 +65,7 @@ class RedisService:
 
 # Create a global Redis service instance with environment variables
 redis_service = RedisService(
-    host=os.getenv('REDIS_HOST', 'localhost'),
+    host=os.getenv('localhost', 'localhost'),
     port=int(os.getenv('REDIS_PORT', 6379)),
     db=int(os.getenv('REDIS_DB', 0))
 )

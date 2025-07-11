@@ -6,7 +6,7 @@
   "fields": [
     {
       "name": "sensor",
-      "type": ["null", "double"],
+      "type": ["null", "string"],
       "default": null,
       "doc": "Unique identifier for the sensor or device (e.g., 'sensor_001', 'device_alpha'). Extracted from the MQTT topic path and used as the primary identifier for database storage and querying."
     },

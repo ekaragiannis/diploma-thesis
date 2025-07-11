@@ -15,7 +15,7 @@ FROM confluentinc/cp-kafka-connect:8.0.0
 
 # Install connectors from Confluent Hub
 RUN confluent-hub install --no-prompt confluentinc/kafka-connect-jdbc:latest && \
-  confluent-hub install --no-prompt redis/redis-kafka-connect:latest && \
+  confluent-hub install --no-prompt redis/redis-kafka-connect:0.9.1 && \
   confluent-hub install --no-prompt debezium/debezium-connector-postgresql:latest
 
 # Copy the Lenses MQTT connector from the downloader stage
