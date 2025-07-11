@@ -1,9 +1,11 @@
 package com.example.kstreams;
 
+import java.time.Duration;
 import java.time.Instant;
-import java.time.ZoneId;
-import java.time.ZonedDateTime;
-import java.util.HashMap;
+import java.time.format.DateTimeParseException;
+import java.util.ArrayList;
+import java.util.Comparator;
+import java.util.List;
 import java.util.Map;
 import java.util.Properties;
 
@@ -16,16 +18,19 @@ import org.apache.kafka.streams.KeyValue;
 import org.apache.kafka.streams.StreamsBuilder;
 import org.apache.kafka.streams.StreamsConfig;
 import org.apache.kafka.streams.errors.StreamsUncaughtExceptionHandler;
+import org.apache.kafka.streams.kstream.Aggregator;
 import org.apache.kafka.streams.kstream.Consumed;
 import org.apache.kafka.streams.kstream.Grouped;
 import org.apache.kafka.streams.kstream.KStream;
 import org.apache.kafka.streams.kstream.KTable;
+import org.apache.kafka.streams.kstream.KeyValueMapper;
 import org.apache.kafka.streams.kstream.Materialized;
+import org.apache.kafka.streams.kstream.Predicate;
 import org.apache.kafka.streams.kstream.Produced;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-import com.example.avro.EnergyData;
+import com.example.avro.HourEnergy;
 import com.example.avro.RedisAggData;
 
 import io.confluent.kafka.streams.serdes.avro.GenericAvroSerde;
@@ -36,7 +41,13 @@ public class App {
 
     static final String SENSOR_INPUT_TOPIC = "db.public.hourlydata";
     static final String SENSOR_OUTPUT_TOPIC = "redis.aggdata";
+    static final int MAX_HOURS_PER_SENSOR = 24;
 
+    /**
+     * Main entry point for the Kafka Streams application.
+     * Sets up the stream topology for aggregating hourly energy data per sensor and
+     * writing results to Redis.
+     */
     public static void main(String[] args) {
         logger.info("Starting Kafka Streams application...");
 
@@ -44,17 +55,7 @@ public class App {
         String kafkaBootstrapServers = System.getenv().getOrDefault("KAKFA_BOOTSTRAP", "broker:29092");
         String schemaRegistryUrl = System.getenv().getOrDefault("KAFKA_SCHEMA_REGISTRY", "http://schema-registry:8081");
 
-        Properties props = new Properties();
-        props.put(StreamsConfig.APPLICATION_ID_CONFIG, "db-redis-streams");
-        props.put(StreamsConfig.BOOTSTRAP_SERVERS_CONFIG, kafkaBootstrapServers);
-        props.put(StreamsConfig.PROCESSING_GUARANTEE_CONFIG, StreamsConfig.EXACTLY_ONCE_V2);
-        props.put(StreamsConfig.DEFAULT_KEY_SERDE_CLASS_CONFIG, Serdes.String().getClass().getName());
-        props.put(StreamsConfig.DEFAULT_VALUE_SERDE_CLASS_CONFIG, Serdes.String().getClass().getName());
-        props.put(StreamsConfig.topicPrefix(TopicConfig.MIN_IN_SYNC_REPLICAS_CONFIG), 1); // Set to replication factor -
-                                                                                          // 1
-        props.put(StreamsConfig.NUM_STANDBY_REPLICAS_CONFIG, 0); // Set to stream instances - 1
-        props.put("schema.registry.url", schemaRegistryUrl);
-
+        Properties props = createStreamsProperties(kafkaBootstrapServers, schemaRegistryUrl);
         StreamsBuilder builder = new StreamsBuilder();
 
         // Configure serde
@@ -63,129 +64,28 @@ public class App {
         final GenericAvroSerde valueSerde = new GenericAvroSerde();
         valueSerde.configure(serdeConfig, false);
 
+        final SpecificAvroSerde<HourEnergy> transformedDataSerde = new SpecificAvroSerde<>();
+        transformedDataSerde.configure(serdeConfig, false);
+
         final SpecificAvroSerde<RedisAggData> redisValueSerde = new SpecificAvroSerde<>();
         redisValueSerde.configure(serdeConfig, false);
-
-        final SpecificAvroSerde<EnergyData> energyValueSerde = new SpecificAvroSerde<>();
-        energyValueSerde.configure(serdeConfig, false);
 
         final Serde<String> keySerde = Serdes.String();
 
         try {
-            // Read the data produced by debezium
-            KStream<String, GenericRecord> stream = builder.stream(SENSOR_INPUT_TOPIC,
-                    Consumed.with(keySerde, valueSerde));
+            KStream<String, HourEnergy> transformedDataStream = builder.stream(SENSOR_INPUT_TOPIC,
+                    Consumed.with(keySerde, valueSerde))
+                    .map(energyDataMapper)
+                    .filter((key, value) -> key != null || value != null)
+                    .filter(isWithinLast24HoursFilter);
 
-            // For each record, extract key and hour from value and add a key composed by
-            // these fields. Because of kafka table, the next event with the same pair will
-            // overwrite the previous one. In that way, we have the latest energy sum for
-            // each sensor and hour.
-            KTable<String, EnergyData> table = stream
-                    .map((oldKey, value) -> {
-                        if (value == null) {
-                            return new KeyValue<>(null, null);
-                        }
-
-                        // Navigate into the nested record
-                        GenericRecord after = (GenericRecord) value.get("after");
-                        if (after == null) {
-                            logger.warn("No 'after' field found in record");
-                            return new KeyValue<>(null, null);
-                        }
-
-                        // Extract sensor from the nested record
-                        Object sensorObj = after.get("sensor");
-                        if (sensorObj == null) {
-                            logger.warn("No 'sensor' field found in 'after' record");
-                            return new KeyValue<>(null, null);
-                        }
-                        String sensor = sensorObj.toString();
-
-                        // Extract hour from the nested record
-                        Object hourBucketObj = after.get("hour_bucket");
-                        if (hourBucketObj == null) {
-                            logger.warn("No 'hour_bucket' field found in 'after' record");
-                            return new KeyValue<>(null, null);
-                        }
-                        Long hourTimestamp = (Long) hourBucketObj;
-
-                        // Extract value from the nested record
-                        Object energyObj = after.get("energy_total");
-                        if (energyObj == null) {
-                            logger.warn("No 'energy_total' field found in 'after' record");
-                            return new KeyValue<>(null, null);
-                        }
-                        Double energy = ((Number) energyObj).doubleValue();
-
-                        // Parse the ISO timestamp and convert to Greece Athens timezone
-                        String hourOfDay;
-                        try {
-                            Long secondsSinceEpoch = hourTimestamp / 1_000_000;
-                            Long nanosAdjustment = (hourTimestamp % 1_000_000) * 1000;
-                            Instant instant = Instant.ofEpochSecond(secondsSinceEpoch, nanosAdjustment);
-                            ZonedDateTime greeceTime = instant.atZone(ZoneId.of("Europe/Athens"));
-
-                            // Extract hour of day and format it to 2 digits (00, 01, 02, etc.)
-                            hourOfDay = String.format("%02d", greeceTime.getHour());
-
-                            logger.debug("Original timestamp: {}, Greece Athens time: {}, Hour: {}",
-                                    hourTimestamp, greeceTime, hourOfDay);
-                        } catch (Exception e) {
-                            logger.error("Failed to parse timestamp: {}", hourTimestamp, e);
-                            return new KeyValue<>(null, null);
-                        }
-
-                        String newKey = sensor + "|" + hourOfDay;
-                        logger.debug("Created new key: {}", newKey);
-
-                        EnergyData newValue = new EnergyData();
-                        newValue.setSensor(sensor);
-                        newValue.setHour(hourOfDay);
-                        newValue.setEnergy(energy);
-
-                        return new KeyValue<>(newKey, newValue);
-                    })
-                    .toTable(Materialized.with(Serdes.String(), energyValueSerde));
-
-            // Convert the KTable to a KStream. Keep only the sensor name as key
-            KStream<String, EnergyData> jsonStream = table.toStream()
-                    .map((key, value) -> {
-                        if (key == null || value == null) {
-                            return new KeyValue<>(null, null);
-                        }
-
-                        // Extract sensor from composite key
-                        String[] parts = key.split("\\|");
-                        if (parts.length != 2) {
-                            logger.warn("Invalid key format: {}", key);
-                            return new KeyValue<>(null, null);
-                        }
-                        String sensor = parts[0];
-
-                        return new KeyValue<>(sensor, value);
-                    });
-
-            // For each sensor, construct a map with the hour as key and the energy
-            // consumption for that hour as value.
-            KTable<String, RedisAggData> aggregated = jsonStream
-                    .groupByKey(Grouped.with(Serdes.String(), energyValueSerde))
-                    .aggregate(
-                            () -> new RedisAggData(null, new HashMap<CharSequence, Double>()),
-                            (sensor, energyData, aggregate) -> {
-                                try {
-                                    String hourBucket = energyData.getHour().toString();
-                                    double energy = energyData.getEnergy();
-                                    aggregate.setSensor(sensor);
-                                    aggregate.getData().put(hourBucket, energy);
-                                    return aggregate;
-                                } catch (Exception e) {
-                                    logger.error("Failed to aggregate results for sensor: {}", sensor, e);
-                                    return aggregate;
-                                }
-                            },
+            KTable<String, RedisAggData> aggregated = transformedDataStream
+                    .groupByKey(Grouped.with(keySerde, transformedDataSerde))
+                    .aggregate(() -> new RedisAggData(new ArrayList<HourEnergy>()),
+                            redisDataAggregator,
                             Materialized.with(Serdes.String(), redisValueSerde));
 
-            aggregated.toStream().to(SENSOR_OUTPUT_TOPIC, Produced.with(Serdes.String(), redisValueSerde));
+            aggregated.toStream().to(SENSOR_OUTPUT_TOPIC, Produced.with(keySerde, redisValueSerde));
 
             KafkaStreams streams = new KafkaStreams(builder.build(), props);
 
@@ -211,4 +111,151 @@ public class App {
             System.exit(1);
         }
     }
+
+    /**
+     * Creates and configures the Kafka Streams properties
+     */
+    private static Properties createStreamsProperties(String kafkaBootstrapServers, String schemaRegistryUrl) {
+        Properties props = new Properties();
+        props.put(StreamsConfig.APPLICATION_ID_CONFIG, "db-redis-streams");
+        props.put(StreamsConfig.BOOTSTRAP_SERVERS_CONFIG, kafkaBootstrapServers);
+        props.put(StreamsConfig.PROCESSING_GUARANTEE_CONFIG, StreamsConfig.EXACTLY_ONCE_V2);
+        props.put(StreamsConfig.DEFAULT_KEY_SERDE_CLASS_CONFIG, Serdes.String().getClass().getName());
+        props.put(StreamsConfig.DEFAULT_VALUE_SERDE_CLASS_CONFIG, Serdes.String().getClass().getName());
+        props.put(StreamsConfig.topicPrefix(TopicConfig.MIN_IN_SYNC_REPLICAS_CONFIG), 1);
+        props.put(StreamsConfig.NUM_STANDBY_REPLICAS_CONFIG, 0);
+        props.put("schema.registry.url", schemaRegistryUrl);
+        return props;
+    }
+
+    private static Aggregator<String, HourEnergy, RedisAggData> redisDataAggregator = (key, newValue, aggregate) -> {
+
+        List<HourEnergy> hourEnergies = aggregate.getData();
+        String hourBucket = newValue.getHourBucket().toString();
+        Double energyTotal = newValue.getEnergyTotal();
+
+        HourEnergy existingHourEnergy = hourEnergies.stream()
+                .filter(hourEnergy -> hourEnergy.getHourBucket().toString().equals(hourBucket))
+                .findFirst()
+                .orElse(null);
+
+        if (existingHourEnergy == null) {
+            HourEnergy newHourEnergy = new HourEnergy();
+            newHourEnergy.setEnergyTotal(energyTotal);
+            newHourEnergy.setHourBucket(hourBucket);
+            hourEnergies.add(newHourEnergy);
+
+            // If size exceeds limit, remove the oldest by timestamp
+            if (hourEnergies.size() > MAX_HOURS_PER_SENSOR) {
+                HourEnergy oldest = hourEnergies.stream()
+                        .min(Comparator.comparing(e -> Instant.parse(e.getHourBucket().toString())))
+                        .orElse(null);
+                if (oldest != null) {
+                    hourEnergies.remove(oldest);
+                }
+            }
+        } else {
+            existingHourEnergy.setEnergyTotal(energyTotal);
+        }
+
+        return aggregate;
+    };
+
+    /**
+     * Converts a timestamp (microseconds since epoch) to a UTC ISO-8601 string.
+     *
+     * @param hourTimestamp The timestamp in microseconds since epoch
+     * @return The UTC timestamp string (e.g., '2024-06-01T14:00:00Z'), or null if
+     *         conversion fails
+     */
+    private static String convertTimestampToUtcString(Long hourTimestamp) {
+        try {
+            Long secondsSinceEpoch = hourTimestamp / 1_000_000;
+            Long nanosAdjustment = (hourTimestamp % 1_000_000) * 1000;
+            Instant instant = Instant.ofEpochSecond(secondsSinceEpoch, nanosAdjustment);
+            return instant.toString();
+        } catch (Exception e) {
+            logger.error("Failed to parse timestamp: {}", hourTimestamp, e);
+            return null;
+        }
+    }
+
+    private static KeyValueMapper<String, GenericRecord, KeyValue<String, HourEnergy>> energyDataMapper = (key,
+            value) -> {
+        GenericRecord after = getNestedRecord(value, "after");
+        if (after == null) {
+            return new KeyValue<>(null, null);
+        }
+
+        String sensor = getStringField(after, "sensor");
+        Long hourBucket = getLongField(after, "hour_bucket");
+        Double energyTotal = getDoubleField(after, "energy_total");
+
+        if (sensor == null || hourBucket == null || energyTotal == null) {
+            return new KeyValue<>(null, null);
+        }
+
+        String hourBucketTimestamp = convertTimestampToUtcString(hourBucket);
+
+        HourEnergy energyData = new HourEnergy();
+        energyData.setEnergyTotal(energyTotal);
+        energyData.setHourBucket(hourBucketTimestamp);
+
+        return KeyValue.pair(sensor, energyData);
+    };
+
+    private static GenericRecord getNestedRecord(GenericRecord record, String fieldName) {
+        Object nested = record.get(fieldName);
+        if (!(nested instanceof GenericRecord)) {
+            logger.warn("No '{}' field found or not a GenericRecord", fieldName);
+            return null;
+        }
+        return (GenericRecord) nested;
+    }
+
+    private static String getStringField(GenericRecord record, String fieldName) {
+        Object value = record.get(fieldName);
+        if (value == null) {
+            logger.warn("No '{}' field found in record", fieldName);
+            return null;
+        }
+        return value.toString();
+    }
+
+    private static Long getLongField(GenericRecord record, String fieldName) {
+        Object value = record.get(fieldName);
+        if (!(value instanceof Number)) {
+            logger.warn("No '{}' field found or not a number", fieldName);
+            return null;
+        }
+        return ((Number) value).longValue();
+    }
+
+    private static Double getDoubleField(GenericRecord record, String fieldName) {
+        Object value = record.get(fieldName);
+        if (!(value instanceof Number)) {
+            logger.warn("No '{}' field found or not a number", fieldName);
+            return null;
+        }
+        return ((Number) value).doubleValue();
+    }
+
+    private static final Predicate<String, HourEnergy> isWithinLast24HoursFilter = (key, value) -> {
+        String hourBucket = value.getHourBucket().toString();
+        try {
+            Instant bucketTime = Instant.parse(hourBucket);
+            Instant now = Instant.now();
+
+            boolean isValid = !bucketTime.isBefore(now.minus(Duration.ofHours(24))) && !bucketTime.isAfter(now);
+            if (!isValid) {
+                logger.info("Filtering out hour_bucket {}: not within last 24 hours", hourBucket);
+            }
+
+            return isValid;
+        } catch (DateTimeParseException e) {
+            logger.warn("Invalid hour_bucket format: {}", hourBucket, e);
+            return false;
+        }
+    };
+
 }

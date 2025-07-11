@@ -1,5 +1,6 @@
 package com.example.kstreams;
 
+import java.time.Instant;
 import java.util.Map;
 import java.util.Properties;
 
@@ -13,6 +14,7 @@ import org.apache.kafka.streams.StreamsConfig;
 import org.apache.kafka.streams.errors.StreamsUncaughtExceptionHandler;
 import org.apache.kafka.streams.kstream.Consumed;
 import org.apache.kafka.streams.kstream.KStream;
+import org.apache.kafka.streams.kstream.KeyValueMapper;
 import org.apache.kafka.streams.kstream.Produced;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -35,16 +37,7 @@ public class MqttDbStreamsApp {
     String kafkaBootstrapServers = System.getenv().getOrDefault("KAKFA_BOOTSTRAP", "broker:29092");
     String schemaRegistryUrl = System.getenv().getOrDefault("KAFKA_SCHEMA_REGISTRY", "http://schema-registry:8081");
 
-    Properties props = new Properties();
-    props.put(StreamsConfig.APPLICATION_ID_CONFIG, "mqtt-db-streams");
-    props.put(StreamsConfig.BOOTSTRAP_SERVERS_CONFIG, kafkaBootstrapServers);
-    props.put(StreamsConfig.PROCESSING_GUARANTEE_CONFIG, StreamsConfig.EXACTLY_ONCE_V2);
-    props.put(StreamsConfig.DEFAULT_KEY_SERDE_CLASS_CONFIG, Serdes.String().getClass().getName());
-    props.put(StreamsConfig.DEFAULT_VALUE_SERDE_CLASS_CONFIG, Serdes.String().getClass().getName());
-    props.put(StreamsConfig.topicPrefix(TopicConfig.MIN_IN_SYNC_REPLICAS_CONFIG), 1);
-    props.put(StreamsConfig.NUM_STANDBY_REPLICAS_CONFIG, 0);
-    props.put("schema.registry.url", schemaRegistryUrl);
-
+    Properties props = createStreamsProperties(kafkaBootstrapServers, schemaRegistryUrl);
     StreamsBuilder builder = new StreamsBuilder();
 
     // Configure serde
@@ -60,52 +53,14 @@ public class MqttDbStreamsApp {
 
     try {
       // Read the data produced by MQTT
-      KStream<String, MqttRawData> stream = builder.stream(MQTT_INPUT_TOPIC,
-          Consumed.with(keySerde, mqttValueSerde));
 
       // Each record has a key with the input mqtt topic. From topic, extract the
       // sensor name and use it as new key. Also, add the sensor name to value, in
       // order for the jdbc sink connector to insert it in the database.
-      KStream<String, DbRawData> processedStream = stream
-          .map((key, value) -> {
-            logger.debug("Processing MQTT record with key: {}", key);
-            if (value == null) {
-              logger.warn("Received null value for key: {}", key);
-              return new KeyValue<String, DbRawData>(null, null);
-            }
-
-            try {
-              // Extract sensor ID from the topic key
-              String[] keyParts = key.split("/");
-              String sensor = keyParts[keyParts.length - 1];
-              if (sensor == null || sensor.isEmpty()) {
-                logger.warn("No sensor ID found in key");
-                return new KeyValue<String, DbRawData>(null, null);
-              }
-
-              // Extract energy value from the Avro record
-              Double energy = value.getEnergy();
-              if (energy == null) {
-                logger.warn("No 'energy' field found in record for sensor: {}", sensor);
-                return new KeyValue<String, DbRawData>(null, null);
-              }
-
-              // Extract timestamp from the Avro record
-              Long timestamp = value.getTimestamp();
-              if (timestamp == null) {
-                logger.warn("No 'timestamp' field found in record for sensor: {}", sensor);
-                return new KeyValue<String, DbRawData>(null, null);
-              }
-
-              DbRawData dbRawData = new DbRawData(sensor, energy, timestamp);
-
-              return new KeyValue<String, DbRawData>(sensor, dbRawData);
-            } catch (Exception e) {
-              logger.error("Error processing record for key: {}", key, e);
-              return new KeyValue<String, DbRawData>(null, null);
-            }
-          })
-          .filter((key, value) -> key != null && value != null);
+      KStream<String, DbRawData> processedStream = builder.stream(MQTT_INPUT_TOPIC,
+          Consumed.with(keySerde, mqttValueSerde))
+          .map(dbRawKeyValueMapper)
+          .filter((key, value) -> key != null);
 
       processedStream.to(DB_OUTPUT_TOPIC, Produced.with(Serdes.String(), dbValueSerde));
 
@@ -133,4 +88,60 @@ public class MqttDbStreamsApp {
       System.exit(1);
     }
   }
+
+  /**
+   * Creates and configures the Kafka Streams properties
+   */
+  private static Properties createStreamsProperties(String kafkaBootstrapServers, String schemaRegistryUrl) {
+    Properties props = new Properties();
+    props.put(StreamsConfig.APPLICATION_ID_CONFIG, "mqtt-db-streams");
+    props.put(StreamsConfig.BOOTSTRAP_SERVERS_CONFIG, kafkaBootstrapServers);
+    props.put(StreamsConfig.PROCESSING_GUARANTEE_CONFIG, StreamsConfig.EXACTLY_ONCE_V2);
+    props.put(StreamsConfig.DEFAULT_KEY_SERDE_CLASS_CONFIG, Serdes.String().getClass().getName());
+    props.put(StreamsConfig.DEFAULT_VALUE_SERDE_CLASS_CONFIG, Serdes.String().getClass().getName());
+    props.put(StreamsConfig.topicPrefix(TopicConfig.MIN_IN_SYNC_REPLICAS_CONFIG), 1);
+    props.put(StreamsConfig.NUM_STANDBY_REPLICAS_CONFIG, 0);
+    props.put("schema.registry.url", schemaRegistryUrl);
+
+    return props;
+  }
+
+  private static String extractSensorFromKey(String key) {
+    String[] keyParts = key.split("/");
+    String sensor = keyParts[keyParts.length - 1];
+
+    if (sensor == null || sensor.isEmpty()) {
+      logger.warn("No sensor ID found in key");
+      return null;
+    }
+
+    return sensor;
+  }
+
+  private static KeyValueMapper<String, MqttRawData, KeyValue<String, DbRawData>> dbRawKeyValueMapper = (key,
+      value) -> {
+    try {
+      // Extract sensor ID from the topic key
+      String sensor = extractSensorFromKey(key);
+
+      // Extract energy value from the Avro record
+      Double energy = value.getEnergy();
+
+      // Extract timestamp from the Avro record
+      Long timestamp = value.getTimestamp();
+      if (timestamp == null) {
+        logger.warn("No 'timestamp' field found in record for sensor: {}. Using current time.", sensor);
+        timestamp = Instant.now().toEpochMilli(); // fallback to current UTC time
+      }
+
+      DbRawData dbRawData = new DbRawData();
+      dbRawData.setEnergy(energy);
+      dbRawData.setTimestamp(timestamp);
+
+      return new KeyValue<String, DbRawData>(sensor, dbRawData);
+    } catch (Exception e) {
+      logger.error("Error processing record for key: {}", key, e);
+      return new KeyValue<String, DbRawData>(null, null);
+    }
+  };
 }

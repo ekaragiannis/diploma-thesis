@@ -185,18 +185,18 @@ services:
       broker:
         condition: service_healthy
 
-  setup-schemas:
-    build:
-      context: .
-      dockerfile: setup-schemas/Dockerfile
-    env_file:
-      - .env
-    container_name: setup-schemas
-    depends_on:
-      broker:
-        condition: service_healthy
-      schema-registry:
-        condition: service_healthy
+  # setup-schemas:
+  #   build:
+  #     context: .
+  #     dockerfile: setup-schemas/Dockerfile
+  #   env_file:
+  #     - .env
+  #   container_name: setup-schemas
+  #   depends_on:
+  #     broker:
+  #       condition: service_healthy
+  #     schema-registry:
+  #       condition: service_healthy
 
   setup-connectors:
     build:

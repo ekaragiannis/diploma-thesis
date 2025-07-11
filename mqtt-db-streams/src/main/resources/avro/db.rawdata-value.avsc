@@ -6,14 +6,15 @@
   "fields": [
     {
       "name": "sensor",
-      "type": "string",
+      "type": ["null", "double"],
+      "default": null,
       "doc": "Unique identifier for the sensor or device (e.g., 'sensor_001', 'device_alpha'). Extracted from the MQTT topic path and used as the primary identifier for database storage and querying."
     },
     {
       "name": "energy",
-      "type": ["null", "double"],
-      "default": null,
-      "doc": "Processed energy consumption reading in kilowatt-hours (kWh). This value has been validated, cleaned, and potentially transformed from the original MQTT reading. Nullable to handle data quality issues."
+      "type": "double",
+      "default": 0.0,
+      "doc": "Processed energy consumption reading in kilowatt-hours (kWh). This value has been validated, cleaned, and potentially transformed from the original MQTT reading. Defaults to 0."
     },
     {
       "name": "timestamp",
