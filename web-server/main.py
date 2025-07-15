@@ -2,9 +2,14 @@ from fastapi import FastAPI, HTTPException
 from fastapi.middleware.cors import CORSMiddleware
 from app.routers.sensor_data import router as sensor_data_router
 from app.routers.sensor import router as sensor_router
-from app.middleware import ExecutionTimeMiddleware
+from app.middlewares import ExecutionTimeMiddleware
 from app.services.db_service import get_db_connection
 from app.services.redis_service import redis_service
+from app.models import HealthResponse
+from app.exceptions import (
+    global_exception_handler,
+    http_exception_handler_with_execution_time,
+)
 from dotenv import load_dotenv
 
 # Load environment variables from .env file
@@ -25,12 +30,16 @@ app.add_middleware(
 # Add execution time middleware
 app.add_middleware(ExecutionTimeMiddleware)
 
+# Add global exception handlers
+app.add_exception_handler(HTTPException, http_exception_handler_with_execution_time)
+app.add_exception_handler(Exception, global_exception_handler)
+
 # Add routers
 app.include_router(sensor_data_router)
 app.include_router(sensor_router)
 
 
-@app.get("/health")
+@app.get("/health", response_model=HealthResponse)
 async def health_check():
     """
     Health check endpoint to verify the application and its dependencies are working.
@@ -61,19 +70,13 @@ async def health_check():
     if not overall_healthy:
         raise HTTPException(
             status_code=503,
-            detail={
-                "status": "unhealthy",
-                "database": db_status,
-                "redis": redis_status
-            }
+            detail="Service unhealthy - check database and redis connections",
         )
 
-    return {
-        "status": "healthy",
-        "database": db_status,
-        "redis": redis_status
-    }
+    return HealthResponse(status="healthy", database=db_status, redis=redis_status)
+
 
 if __name__ == "__main__":
     import uvicorn
+
     uvicorn.run(app, host="0.0.0.0", port=5000)

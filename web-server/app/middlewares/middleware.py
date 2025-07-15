@@ -46,7 +46,7 @@ def get_execution_time(request: Request) -> float:
     Returns:
         Execution time as a float in milliseconds.
     """
-    if hasattr(request.state, 'start_time'):
+    if hasattr(request.state, "start_time"):
         execution_time_ms = (time.time() - request.state.start_time) * 1000
         return round(execution_time_ms, 2)
     return 0.00

@@ -1,60 +1,37 @@
 import redis
 import os
-from typing import Any, List, Optional, Dict
+from typing import List, Optional, Any
+from app.models import SensorDataRecord
 
 
 class RedisService:
-    """
-    A service class for interacting with Redis cache and database.
-
-    This class provides methods to retrieve sensor data from Redis cache,
-    test Redis connectivity, and manage Redis operations for the energy
-    monitoring system.
-
-    Attributes:
-        redis_client (redis.Redis): The Redis client instance for database operations.
-    """
-
     def __init__(self, host: str = "localhost", port: int = 6379, db: int = 0):
-        print(host, port)
         self.redis_client = redis.Redis(
-            host=host,
-            port=port,
-            db=db,
-            decode_responses=True
+            host=host, port=port, db=db, decode_responses=True
         )
 
-    def get_sensor_data(self, sensor: str) -> Optional[List[Any]]:
-        """
-        Retrieve cached sensor data from Redis for a specific sensor.
-
-        Args:
-            sensor (str): The unique identifier of the sensor (e.g., "sensor_001").
-
-        Returns:
-            Optional[Dict[str, float]]: A dictionary containing hourly energy data
-                where keys are hours (00-23 as strings) and values are energy
-                consumption in kWh as floats, sorted by hour. Returns None if no data is found
-                or if an error occurs.
-
-        """
+    def get_sensor_data(self, sensor: str) -> Optional[List[SensorDataRecord]]:
         try:
             # Try to get data from Redis using JSON.GET command
             cached_data = self.redis_client.json().get(sensor)
-            if cached_data and isinstance(cached_data, dict) and 'data' in cached_data:
-                return cached_data.get('data')
+            if cached_data and isinstance(cached_data, dict) and "data" in cached_data:
+                data: list[dict[str, Any]] = cached_data.get("data")
+                result: List[SensorDataRecord] = []
+                for obj in data:
+                    hour_bucket = obj.get("hour_bucket")
+                    energy_total = obj.get("energy_total")
+                    result.append(
+                        SensorDataRecord(
+                            hour_bucket=hour_bucket, energy_total=energy_total
+                        )
+                    )
+                return result
             return None
         except Exception as e:
             print(f"Error retrieving data from Redis: {e}")
             return None
 
     def ping(self) -> bool:
-        """
-        Test the Redis connection by sending a PING command.
-
-        Returns:
-            bool: True if Redis is responding, False otherwise.
-        """
         try:
             result = self.redis_client.ping()
             return bool(result)
@@ -63,9 +40,10 @@ class RedisService:
             return False
 
 
-# Create a global Redis service instance with environment variables
+# Global Redis service instance configured from environment variables
+# This singleton pattern ensures consistent Redis configuration across the application
 redis_service = RedisService(
-    host=os.getenv('localhost', 'localhost'),
-    port=int(os.getenv('REDIS_PORT', 6379)),
-    db=int(os.getenv('REDIS_DB', 0))
+    host=os.getenv("REDIS_HOST", "localhost"),  # Redis server hostname
+    port=int(os.getenv("REDIS_PORT", 6379)),  # Redis server port
+    db=int(os.getenv("REDIS_DB", 0)),  # Redis database number
 )
