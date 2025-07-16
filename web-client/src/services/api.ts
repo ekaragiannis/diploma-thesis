@@ -3,7 +3,7 @@ import type { InternalAxiosRequestConfig } from 'axios';
 
 // Create axios instance with base configuration
 const api: AxiosInstance = axios.create({
-  baseURL: '__BASE_URL__', // Uses the base URL from the environment variable
+  baseURL: 'http://localhost:5000', // Uses the base URL from the environment variable
   timeout: 10000,
   headers: {
     'Content-Type': 'application/json',
