@@ -4,6 +4,8 @@ CREATE TABLE rawdata (
     "energy" FLOAT NOT NULL
 );
 
+CREATE UNIQUE INDEX rawdata_pk ON rawdata("sensor", "timestamp");
+
 SELECT create_hypertable('rawdata', 'timestamp');
 
 CREATE MATERIALIZED VIEW hourlydata

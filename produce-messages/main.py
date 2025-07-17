@@ -39,7 +39,6 @@ def publish_sensor_data(sensor_name):
             energy = round(random.uniform(0.0, 50.0), 2)
             timestamp = int(time.time() * 1000)
             message = {
-                "sensor_name": sensor_name,
                 "energy": energy,
                 "timestamp": timestamp,
             }
