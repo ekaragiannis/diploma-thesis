@@ -8,6 +8,7 @@ export type EnergyData = {
 
 export interface SensorDataResponse {
   sensor: string;
+  source: 'db_raw' | 'db_hourly' | 'redis';
   data: EnergyData[];
   execution_time: number;
 }
