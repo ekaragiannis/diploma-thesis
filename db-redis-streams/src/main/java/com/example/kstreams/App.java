@@ -44,6 +44,8 @@ public class App {
     static final String SENSOR_INPUT_TOPIC = "db.public.hourlydata";
     static final String SENSOR_OUTPUT_TOPIC = "redis.aggdata";
     static final int MAX_HOURS_PER_SENSOR = 24;
+    private static final DateTimeFormatter FORMATTER = DateTimeFormatter.ofPattern("yyyy-MM-dd HH:mm:ss")
+            .withZone(ZoneOffset.UTC);
 
     /**
      * Main entry point for the Kafka Streams application.
@@ -175,8 +177,7 @@ public class App {
             Long secondsSinceEpoch = hourTimestamp / 1_000_000;
             Long nanosAdjustment = (hourTimestamp % 1_000_000) * 1000;
             Instant instant = Instant.ofEpochSecond(secondsSinceEpoch, nanosAdjustment);
-            return DateTimeFormatter.ofPattern("yyyy-MM-dd HH:mm:ss").withZone(ZoneOffset.UTC)
-                    .format(instant);
+            return FORMATTER.format(instant);
         } catch (Exception e) {
             logger.error("Failed to parse timestamp: {}", hourTimestamp, e);
             return null;
@@ -246,7 +247,7 @@ public class App {
     private static final Predicate<String, HourEnergy> isWithinLast24HoursFilter = (key, value) -> {
         String hourBucket = value.getHourBucket().toString();
         try {
-            Instant bucketTime = Instant.parse(hourBucket);
+            Instant bucketTime = Instant.from(FORMATTER.parse(hourBucket));
             Instant now = Instant.now();
 
             boolean isValid = !bucketTime.isBefore(now.minus(Duration.ofHours(24))) && !bucketTime.isAfter(now);

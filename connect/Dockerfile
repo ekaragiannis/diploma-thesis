@@ -14,9 +14,9 @@ RUN wget -q https://github.com/lensesio/stream-reactor/releases/download/9.0.0/k
 FROM confluentinc/cp-kafka-connect:8.0.0
 
 # Install connectors from Confluent Hub
-RUN confluent-hub install --no-prompt confluentinc/kafka-connect-jdbc:latest && \
+RUN confluent-hub install --no-prompt confluentinc/kafka-connect-jdbc:10.8.4 && \
   confluent-hub install --no-prompt redis/redis-kafka-connect:0.9.1 && \
-  confluent-hub install --no-prompt debezium/debezium-connector-postgresql:latest
+  confluent-hub install --no-prompt debezium/debezium-connector-postgresql:3.1.2
 
 # Copy the Lenses MQTT connector from the downloader stage
 COPY --from=downloader /tmp/connectors/ /kafka-connect-plugins/
