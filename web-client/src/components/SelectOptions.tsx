@@ -33,7 +33,7 @@ const SelectOptions = () => {
     setSelectedSensor,
     setSelectedDataType,
   } = useSensorSelectionStore();
-  const { setResults } = useResultsStore();
+  const { setResults, setError } = useResultsStore();
 
   // TanStack Query hooks for data fetching
   const {
@@ -65,6 +65,12 @@ const SelectOptions = () => {
       alert('Please select both a sensor and data type');
       return;
     }
+
+    if (sensorDataError) {
+      setError(sensorDataError.message);
+      return;
+    }
+
     try {
       const result = await refetchSensorData();
       if (result.data) {
@@ -81,13 +87,6 @@ const SelectOptions = () => {
     return (
       <StyledDiv>
         <div>Error loading sensors: {sensorsError.message}</div>
-      </StyledDiv>
-    );
-  }
-  if (sensorDataError) {
-    return (
-      <StyledDiv>
-        <div>Error loading sensor data: {sensorDataError.message}</div>
       </StyledDiv>
     );
   }

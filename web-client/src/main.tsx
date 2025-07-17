@@ -11,8 +11,7 @@ import theme from './theme/theme.ts';
 const queryClient = new QueryClient({
   defaultOptions: {
     queries: {
-      retry: 3,
-      retryDelay: 1000,
+      retry: 1,
       staleTime: 1 * 60 * 1000, // 1 minute
     },
   },
