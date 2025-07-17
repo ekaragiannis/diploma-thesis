@@ -36,41 +36,46 @@ This will start all services:
 
 ### 3. Start Producing Messages
 
-To start the data pipeline, you need to produce sensor messages. Use the provided Python script to simulate sensor data:
+To activate the data pipeline, you'll need to begin producing sensor messages. Follow these steps from the project root directory:
+
+#### Initial Setup
 
 ```bash
-# Navigate to the produce-messages directory
-cd produce-messages
+# Build the produce-messages container
+docker build -t produce-messages produce-messages/
 
-# Activate virtual environment
-source venv/bin/activate
+# Make scripts executable
+chmod +x run_test.sh stop_test.sh
 
-# Install dependencies
-pip install -r requirements.txt
-
-# Start producing messages for a sensor (replace 'sensor_001' with your sensor name)
-python produce_message.py sensor_001
+# Start producing messages to MQTT broker
+./run_test.sh
 ```
 
-**Multiple Sensors**: You can simulate multiple sensors by running the script with different sensor names in separate terminals:
+#### Multiple Sensors Simulation
+
+You can simulate multiple sensors by specifying the number of sensors as an argument:
 
 ```bash
-# Terminal 1
-python produce_message.py sensor_001
-
-# Terminal 2
-python produce_message.py sensor_002
-
-# Terminal 3
-python produce_message.py sensor_003
+# Example: Start producing messages for 5 sensors (sensor_1, sensor_2, ..., sensor_5)
+./run_test.sh 5
 ```
 
-The script will:
+#### What the Script Does
 
-- Connect to the MQTT broker automatically
-- Generate random sensor data every second
-- Publish messages to the topic `/sensors/{sensor_name}`
-- Continue running until you press Ctrl+C
+The message producer will:
+
+- Automatically connect to the MQTT broker running on port 1883
+- Generate realistic random sensor data every second
+- Publish messages to topic pattern `/sensors/{sensor_name}`
+- Continue running indefinitely until manually stopped
+
+#### Stopping Message Production
+
+To halt message production:
+
+```bash
+./stop_test.sh
+```
 
 The system will automatically:
 
@@ -94,8 +99,5 @@ This section outlines upcoming integrations and improvements for the IoT data pr
 
 - **Prometheus & Grafana**: Integrate comprehensive monitoring and visualization for system metrics
 - **Data Retention Policy**: Implement automatic cleanup for `rawdata` TimescaleDB table (drop data older than 1 day)
-- **Stream Processing**: Simplify `db-redis-streams` logic and improve cached data format for better performance
-- **API Enhancements**: Update `web-server` API responses with improved data structures and error handling
-- **Component Library**: Integrate a modern UI component library for `web-client` to enhance responsiveness and user experience
 - **Documentation**: Add a `README.md` file for each service, explaining its implementation and purpose
 - **Kubernetes**: Migrate to Kubernetes for better scalability and container orchestration
