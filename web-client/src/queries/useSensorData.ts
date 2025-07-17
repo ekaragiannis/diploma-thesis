@@ -17,6 +17,6 @@ export const useSensorData = (
       );
       return response.data;
     },
-    enabled: !!sensor && !!dataType, // Only run query when both sensor and dataType are provided
+    enabled: false, // Disable automatic execution - only run when manually triggered
   });
 };
