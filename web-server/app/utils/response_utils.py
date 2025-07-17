@@ -4,6 +4,18 @@ from app.models import SensorDataRecord, EnergyConsumption
 
 
 def format_data_for_response(data: List[SensorDataRecord]) -> List[EnergyConsumption]:
+    """
+    Format raw sensor data records for API response.
+    
+    Converts SensorDataRecord objects to EnergyConsumption format suitable for API responses.
+    Handles timezone conversion from UTC to Athens time and formats time periods as hour ranges.
+    
+    Args:
+        data: List of SensorDataRecord objects from database or cache
+        
+    Returns:
+        List of EnergyConsumption objects formatted for API response
+    """
     formatted_data = []
 
     for row in data:
