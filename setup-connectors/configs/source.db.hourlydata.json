@@ -11,7 +11,7 @@
     "topic.prefix": "db",
     "plugin.name": "pgoutput",
     "schema.include.list": "_timescaledb_internal",
-    "table.exclude.list": "_timescaledb_internal._hyper_1_1_chunk",
+    "table.exclude.list": "_timescaledb_internal\\._hyper_1_\\d+_chunk",
     "value.converter": "io.confluent.connect.avro.AvroConverter",
     "value.converter.schema.registry.url": "${file:/secrets/properties:KAFKA_SCHEMA_REGISTRY}",
     "transforms": "timescaledb,includeField,setSchemaMetadata",
