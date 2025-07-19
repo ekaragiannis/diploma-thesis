@@ -34,7 +34,19 @@ This will start all services:
 - DB-Redis Streams application (Java)
 - MQTT-DB Streams application (Java)
 
-### 3. Start Producing Messages
+### 3. Data Pipeline Architecture
+
+The system processes sensor data through the following pipeline:
+
+1. **MQTT → Kafka**: Sensor data flows from MQTT broker to `mqtt.rawdata` topic
+2. **Kafka Streams Processing**: Raw data is processed and routed to `db.rawdata` topic
+3. **Kafka → TimescaleDB**: Raw data is stored in `rawdata` table
+4. **TimescaleDB Aggregation**: Hourly aggregation creates `hourlydata` table
+5. **CDC Capture**: Debezium captures changes from `hourlydata` table
+6. **Kafka Streams Processing**: Hourly data is processed and sent to `redis.aggdata` topic
+7. **Kafka → Redis**: Aggregated data is cached in Redis for API access
+
+### 4. Start Producing Messages
 
 To activate the data pipeline, you'll need to begin producing sensor messages. Follow these steps from the project root directory:
 
@@ -47,17 +59,20 @@ docker build -t produce-messages produce-messages/
 # Make scripts executable
 chmod +x run_test.sh stop_test.sh
 
-# Start producing messages to MQTT broker
-./run_test.sh
+# Start producing messages to MQTT broker (requires sensor names)
+./run_test.sh sensor_001
 ```
 
 #### Multiple Sensors Simulation
 
-You can simulate multiple sensors by specifying the number of sensors as an argument:
+You can simulate multiple sensors by specifying sensor names as arguments:
 
 ```bash
-# Example: Start producing messages for 5 sensors (sensor_1, sensor_2, ..., sensor_5)
-./run_test.sh 5
+# Example: Start producing messages for specific sensors
+./run_test.sh sensor_001 sensor_002 sensor_003
+
+# Or start a single sensor
+./run_test.sh sensor_001
 ```
 
 #### What the Script Does
@@ -84,7 +99,25 @@ The system will automatically:
 - Aggregate hourly data and cache it in Redis
 - Make data available through the web dashboard
 
-### 4. Web Interfaces
+### 5. Generate Historical Test Data
+
+For testing and demonstration purposes, you can generate one year of historical data for any sensor:
+
+```bash
+# Make the script executable
+chmod +x insert-one-year-data.sh
+
+# Insert one year of historical data for a specific sensor
+./insert-one-year-data.sh sensor_001
+```
+
+This script will:
+- Insert data points for every second over the past year
+- Generate random energy values between 5-15 units
+- Automatically refresh the hourly aggregated data
+- Provide a complete dataset for dashboard visualization
+
+### 6. Web Interfaces
 
 - **Kafka UI**: Web-based interface for monitoring Kafka topics, schemas, connectors, and cluster health. Access at http://localhost:8080
 - **Web Client**: Interactive dashboard for visualizing sensor data from the last 24 hours with performance metrics. Access at http://localhost
