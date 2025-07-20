@@ -1,47 +1,34 @@
-from typing import Any, Dict
+from typing import List
 from .time_utils import convert_utc_to_athens
+from app.models import SensorDataRecord, EnergyConsumption
 
 
-def format_data_for_response(raw_data: list[Dict[str, Any]]):
+def format_data_for_response(data: List[SensorDataRecord]) -> List[EnergyConsumption]:
     """
-    Format raw hourlydata into response format with Athens timezone.
-
+    Format raw sensor data records for API response.
+    
+    Converts SensorDataRecord objects to EnergyConsumption format suitable for API responses.
+    Handles timezone conversion from UTC to Athens time and formats time periods as hour ranges.
+    
     Args:
-        raw_data: List of dictionaries containing hourly data from database
-
+        data: List of SensorDataRecord objects from database or cache
+        
     Returns:
-        dict: Formatted data with hour keys (00-23) and energy values
+        List of EnergyConsumption objects formatted for API response
     """
-    formatted_data = {}
-    for row in raw_data:
-        hour_bucket = row.get('hour_bucket')
-        if hour_bucket:
-            # Convert to Athens timezone
-            athens_time = convert_utc_to_athens(hour_bucket)
-            hour = athens_time.strftime('%H')
-            value = row.get('energy_total', 0)
-            formatted_data[hour] = value
-    sorted_data = dict(sorted(formatted_data.items(), key=lambda x: x[0]))
-    return sorted_data
+    formatted_data = []
 
+    for row in data:
+        if row.hour_bucket:
+            athens_time = convert_utc_to_athens(row.hour_bucket)
+            hour = athens_time.strftime("%H")
+            period = f"{hour}:00-{hour}:59"
+            date = athens_time.strftime("%Y-%m-%d")
 
-def format_rawdata_for_response(raw_data: list[Dict[str, Any]]):
-    """
-    Format raw data into response format with Athens timezone.
+            formatted_data.append(
+                EnergyConsumption(
+                    energy_total=row.energy_total, period=period, date=date
+                )
+            )
 
-    Args:
-        raw_data: List of dictionaries containing raw data from database
-
-    Returns:
-        list: List of formatted data points with Athens timestamps
-    """
-    formatted_data = {}
-    for row in raw_data:
-        timestamp = row.get('timestamp')
-        if timestamp:
-            # Convert to Athens timezone
-            athens_time = convert_utc_to_athens(timestamp)
-            hour = athens_time.strftime('%H')
-            energy = row.get('energy', 0)
-            formatted_data[hour] = energy
     return formatted_data

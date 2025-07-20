@@ -1,80 +1,67 @@
-import type { Theme } from '@emotion/react';
-import { useTheme } from '@emotion/react';
-import DataTable, { type TableStyles } from 'react-data-table-component';
+import {
+  Box,
+  ToggleButton,
+  ToggleButtonGroup,
+  Typography,
+} from '@mui/material';
+import { TableChart, ShowChart } from '@mui/icons-material';
+import { useState } from 'react';
 import { useResultsStore } from '../stores/resultsStore';
+import ResultsTable from './ResultsTable';
+import ResultsGraph from './ResultsGraph';
+
+type ViewMode = 'table' | 'graph';
 
 /**
- * Custom table styles that adapt to the current theme
+ * A results display component that allows switching between table and graph views
  *
- * @param theme - The current application theme
- * @returns TableStyles object with themed styling
- */
-const customStyles = (theme: Theme): TableStyles => ({
-  table: {
-    style: {
-      maxWidth: '50%',
-      minWidth: '500px',
-      margin: '0 auto',
-    },
-  },
-  headRow: {
-    style: {
-      fontSize: '1rem',
-      fontWeight: 600,
-      border: 'none',
-    },
-  },
-  rows: {
-    style: {
-      '&:not(:last-of-type)': {
-        border: 'none',
-      },
-    },
-  },
-  headCells: {
-    style: {
-      border: `1px solid ${theme.colors.border}`,
-      backgroundColor: theme.colors.surface,
-      color: theme.colors.text,
-    },
-  },
-  cells: {
-    style: {
-      border: `1px solid ${theme.colors.border}`,
-      color: theme.colors.text,
-      backgroundColor: theme.colors.background,
-    },
-  },
-});
-
-/**
- * A data table component for displaying sensor results
-
- * The component uses react-data-table-component for enhanced functionality
- * including sorting, responsive design, and accessibility features.
- 
+ * The component provides a toggle button to switch between table and graph
+ * representations of the sensor data, with proper error handling.
  */
 const Results = () => {
-  const { results } = useResultsStore();
-  const theme = useTheme();
+  const { results, error } = useResultsStore();
+  const [viewMode, setViewMode] = useState<ViewMode>('table');
 
-  const rows = results
-    ? Object.entries(results.data).map(([hour, energy]) => ({
-        hour,
-        energy: Number(energy),
-      }))
-    : [];
+  const handleViewChange = (
+    _event: React.MouseEvent<HTMLElement>,
+    newView: ViewMode | null,
+  ) => {
+    if (newView !== null) {
+      setViewMode(newView);
+    }
+  };
+
+  if (error) {
+    return <Typography>{error}</Typography>;
+  }
+
+  const hasData = results?.data && results.data.length > 0;
 
   return (
-    <DataTable
-      customStyles={customStyles(theme)}
-      defaultSortFieldId={1}
-      columns={[
-        { name: 'Hour', selector: (row) => row.hour, sortable: true },
-        { name: 'Energy', selector: (row) => row.energy, sortable: true },
-      ]}
-      data={rows}
-    />
+    <Box sx={{ width: '100%', margin: '0 auto' }}>
+      {hasData && (
+        <Box sx={{ display: 'flex', justifyContent: 'center', mb: 2 }}>
+          <ToggleButtonGroup
+            value={viewMode}
+            exclusive
+            onChange={handleViewChange}
+            aria-label="view mode"
+            size="small"
+          >
+            <ToggleButton value="table" aria-label="table view">
+              <TableChart sx={{ mr: 1 }} />
+              Table
+            </ToggleButton>
+            <ToggleButton value="graph" aria-label="graph view">
+              <ShowChart sx={{ mr: 1 }} />
+              Graph
+            </ToggleButton>
+          </ToggleButtonGroup>
+        </Box>
+      )}
+      
+      {viewMode === 'table' ? <ResultsTable /> : <ResultsGraph />}
+    </Box>
   );
 };
 

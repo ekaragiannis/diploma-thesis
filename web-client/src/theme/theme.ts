@@ -1,34 +1,48 @@
-/**
- * Theme configuration object for the application
- */
-const theme = {
-  colors: {
-    background: '#171717', // dark background
-    surface: '#232323', // slightly lighter for cards/sections
-    primary: '#b91c1c', // red accent
-    primaryHover: '#6b7280', // light gray for hover
-    text: '#f3f4f6', // light gray text
-    textSecondary: '#a3a3a3', // muted text
-    border: '#333',
-    disabled: '#333',
-  },
-  borderRadius: '6px',
-  spacing: (factor: number) => `${0.5 * factor}rem`,
-};
+import { createTheme } from '@mui/material/styles';
 
-export interface Theme {
-  colors: {
-    background: string;
-    surface: string;
-    primary: string;
-    primaryHover: string;
-    text: string;
-    textSecondary: string;
-    border: string;
-    disabled: string;
-  };
-  borderRadius: string;
-  spacing: (factor: number) => string;
-}
+/**
+ * Material-UI theme configuration for the application
+ */
+const theme = createTheme({
+  palette: {
+    mode: 'dark',
+    primary: {
+      main: '#b91c1c',
+      contrastText: '#ffffff',
+    },
+    secondary: {
+      main: '#6b7280',
+    },
+    background: {
+      default: '#171717',
+      paper: '#1a1a1a',
+    },
+    text: {
+      primary: '#f3f4f6',
+      secondary: '#a3a3a3',
+    },
+    divider: '#333',
+    action: {
+      disabled: '#333',
+    },
+  },
+  shape: {
+    borderRadius: 6,
+  },
+  spacing: 8,
+  typography: {
+    fontFamily: 'Inter, sans-serif',
+  },
+  components: {
+    MuiCssBaseline: {
+      styleOverrides: {
+        body: {
+          backgroundColor: '#171717',
+          color: '#f3f4f6',
+        },
+      },
+    },
+  },
+});
 
 export default theme;

@@ -1,2 +1,4 @@
-paho-mqtt==1.6.1
-python-dotenv==1.0.0 
+autopep8==2.3.2
+paho-mqtt==2.1.0
+pycodestyle==2.14.0
+python-dotenv==1.1.1

@@ -3,19 +3,16 @@ import time
 import json
 import os
 import argparse
-from dotenv import load_dotenv
 from paho.mqtt import client as mqtt_client
 
-# Load environment variables from root .env file
-load_dotenv('../.env')
 
-BROKER = 'localhost'  # Change to your MQTT broker address
-PORT = 1883           # Change to your MQTT broker port if needed
-CLIENT_ID = f'producer-{random.randint(0, 1000)}'
+BROKER = "mqtt"
+PORT = 1883  # Change to your MQTT broker port if needed
+CLIENT_ID = f"producer-{random.randint(0, 1000)}"
 
 # Get credentials from environment variables
-MQTT_USER = os.getenv('MQTT_USER')
-MQTT_PASSWORD = os.getenv('MQTT_PASSWORD')
+MQTT_USER = os.getenv("MQTT_USER")
+MQTT_PASSWORD = os.getenv("MQTT_PASSWORD")
 
 
 def connect_mqtt():
@@ -42,20 +39,19 @@ def publish_sensor_data(sensor_name):
             energy = round(random.uniform(0.0, 50.0), 2)
             timestamp = int(time.time() * 1000)
             message = {
-                'sensor_name': sensor_name,
-                'energy': energy,
-                'timestamp': timestamp
+                "energy": energy,
+                "timestamp": timestamp,
             }
 
             result = client.publish(topic, json.dumps(message))
             status = result[0]
 
             if status == 0:
-                print(
-                    f"Sensor '{sensor_name}': Sent `{message}` to topic `{topic}`")
+                print(f"Sensor '{sensor_name}': Sent `{message}` to topic `{topic}`")
             else:
                 print(
-                    f"Sensor '{sensor_name}': Failed to send message to topic {topic}")
+                    f"Sensor '{sensor_name}': Failed to send message to topic {topic}"
+                )
 
             time.sleep(1)  # Wait 1 second before next message
 
@@ -69,10 +65,10 @@ def publish_sensor_data(sensor_name):
 
 
 def main():
-    parser = argparse.ArgumentParser(
-        description='MQTT Sensor Message Producer')
+    parser = argparse.ArgumentParser(description="MQTT Sensor Message Producer")
     parser.add_argument(
-        'sensor_name', help='Name of the sensor (e.g., s1, s2, temperature, humidity)')
+        "sensor_name", help="Name of the sensor (e.g., s1, s2, temperature, humidity)"
+    )
 
     args = parser.parse_args()
     sensor_name = args.sensor_name
@@ -80,5 +76,5 @@ def main():
     publish_sensor_data(sensor_name)
 
 
-if __name__ == '__main__':
+if __name__ == "__main__":
     main()

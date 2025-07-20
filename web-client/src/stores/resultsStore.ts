@@ -3,7 +3,9 @@ import type { SensorDataResponse } from '../types';
 
 interface ResultsState {
   results: SensorDataResponse | null;
+  error: string | null;
   setResults: (data: SensorDataResponse) => void;
+  setError: (error: string) => void;
 }
 
 /**
@@ -14,5 +16,7 @@ interface ResultsState {
  */
 export const useResultsStore = create<ResultsState>((set) => ({
   results: null,
+  error: null,
   setResults: (data) => set({ results: data }),
+  setError: (error) => set({ error }),
 }));

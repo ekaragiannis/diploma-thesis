@@ -1,21 +1,21 @@
-import styled from '@emotion/styled';
+import { Button } from '@mui/material';
+import { styled } from '@mui/material/styles';
 import { useHistory } from '../hooks/useHistory';
 import { useSensorData } from '../queries/useSensorData';
 import { useSensors } from '../queries/useSensors';
 import { useResultsStore } from '../stores/resultsStore';
 import { useSensorSelectionStore } from '../stores/sensorSelectionStore';
-import Button from './Button';
 import Dropdown from './Dropdown';
 
 /**
  * Container for the selection controls layout
  */
-const StyledDiv = styled.div`
-  display: flex;
-  flex-direction: row;
-  align-items: flex-end;
-  gap: ${({ theme }) => theme.spacing(8)};
-`;
+const StyledDiv = styled('div')(({ theme }) => ({
+  display: 'flex',
+  flexDirection: 'row',
+  alignItems: 'flex-end',
+  gap: theme.spacing(4),
+}));
 
 /**
  * A component for selecting sensor parameters and triggering data fetching
@@ -24,14 +24,6 @@ const StyledDiv = styled.div`
  * the sensorSelectionStore, fetches available sensors using TanStack Query,
  * and triggers data fetching when the Run button is clicked. Results are
  * stored in the global resultsStore and history is automatically updated.
- *
- * @example
- * ```tsx
- * // The component automatically handles all state management
- * <SelectOptions />
- * ```
- *
- * @returns A form-like component with sensor selection controls
  */
 const SelectOptions = () => {
   // Zustand stores for global state management
@@ -41,7 +33,7 @@ const SelectOptions = () => {
     setSelectedSensor,
     setSelectedDataType,
   } = useSensorSelectionStore();
-  const { setResults } = useResultsStore();
+  const { setResults, setError } = useResultsStore();
 
   // TanStack Query hooks for data fetching
   const {
@@ -73,6 +65,12 @@ const SelectOptions = () => {
       alert('Please select both a sensor and data type');
       return;
     }
+
+    if (sensorDataError) {
+      setError(sensorDataError.message);
+      return;
+    }
+
     try {
       const result = await refetchSensorData();
       if (result.data) {
@@ -92,13 +90,6 @@ const SelectOptions = () => {
       </StyledDiv>
     );
   }
-  if (sensorDataError) {
-    return (
-      <StyledDiv>
-        <div>Error loading sensor data: {sensorDataError.message}</div>
-      </StyledDiv>
-    );
-  }
 
   return (
     <StyledDiv>
@@ -107,6 +98,7 @@ const SelectOptions = () => {
         label="Sensor"
         options={sensorNames.map((name) => ({ label: name, value: name }))}
         onSelectionChange={setSelectedSensor}
+        value={selectedSensor}
       />
       <Dropdown
         id="data-type-select"
@@ -121,9 +113,17 @@ const SelectOptions = () => {
             setSelectedDataType(value as 'cached' | 'hourly' | 'raw');
           }
         }}
+        value={selectedDataType}
       />
       <Button
+        variant="contained"
         onClick={handleRunClick}
+        size="small"
+        sx={{
+          '&.Mui-disabled': {
+            color: (theme) => theme.palette.text.primary,
+          },
+        }}
         disabled={
           !selectedSensor ||
           !selectedDataType ||

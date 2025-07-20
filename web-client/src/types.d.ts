@@ -1,8 +1,15 @@
 export type DataType = 'cached' | 'hourly' | 'raw' | '';
 
+export type EnergyData = {
+  energy_total: number;
+  period: string;
+  date: string;
+};
+
 export interface SensorDataResponse {
   sensor: string;
-  data: Record<string, number>;
+  source: 'db_raw' | 'db_hourly' | 'redis';
+  data: EnergyData[];
   execution_time: number;
 }
 

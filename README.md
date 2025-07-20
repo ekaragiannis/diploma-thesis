@@ -34,43 +34,63 @@ This will start all services:
 - DB-Redis Streams application (Java)
 - MQTT-DB Streams application (Java)
 
-### 3. Start Producing Messages
+### 3. Data Pipeline Architecture
 
-To start the data pipeline, you need to produce sensor messages. Use the provided Python script to simulate sensor data:
+The system processes sensor data through the following pipeline:
 
-```bash
-# Navigate to the produce-messages directory
-cd produce-messages
+1. **MQTT → Kafka**: Sensor data flows from MQTT broker to `mqtt.rawdata` topic
+2. **Kafka Streams Processing**: Raw data is processed and routed to `db.rawdata` topic
+3. **Kafka → TimescaleDB**: Raw data is stored in `rawdata` table
+4. **TimescaleDB Aggregation**: Hourly aggregation creates `hourlydata` table
+5. **CDC Capture**: Debezium captures changes from `hourlydata` table
+6. **Kafka Streams Processing**: Hourly data is processed and sent to `redis.aggdata` topic
+7. **Kafka → Redis**: Aggregated data is cached in Redis for API access
 
-# Activate virtual environment
-source venv/bin/activate
+### 4. Start Producing Messages
 
-# Install dependencies
-pip install -r requirements.txt
+To activate the data pipeline, you'll need to begin producing sensor messages. Follow these steps from the project root directory:
 
-# Start producing messages for a sensor (replace 'sensor_001' with your sensor name)
-python produce_message.py sensor_001
-```
-
-**Multiple Sensors**: You can simulate multiple sensors by running the script with different sensor names in separate terminals:
+#### Initial Setup
 
 ```bash
-# Terminal 1
-python produce_message.py sensor_001
+# Build the produce-messages container
+docker build -t produce-messages produce-messages/
 
-# Terminal 2
-python produce_message.py sensor_002
+# Make scripts executable
+chmod +x run_test.sh stop_test.sh
 
-# Terminal 3
-python produce_message.py sensor_003
+# Start producing messages to MQTT broker (requires sensor names)
+./run_test.sh sensor_001
 ```
 
-The script will:
+#### Multiple Sensors Simulation
 
-- Connect to the MQTT broker automatically
-- Generate random sensor data every second
-- Publish messages to the topic `/sensors/{sensor_name}`
-- Continue running until you press Ctrl+C
+You can simulate multiple sensors by specifying sensor names as arguments:
+
+```bash
+# Example: Start producing messages for specific sensors
+./run_test.sh sensor_001 sensor_002 sensor_003
+
+# Or start a single sensor
+./run_test.sh sensor_001
+```
+
+#### What the Script Does
+
+The message producer will:
+
+- Automatically connect to the MQTT broker running on port 1883
+- Generate realistic random sensor data every second
+- Publish messages to topic pattern `/sensors/{sensor_name}`
+- Continue running indefinitely until manually stopped
+
+#### Stopping Message Production
+
+To halt message production:
+
+```bash
+./stop_test.sh
+```
 
 The system will automatically:
 
@@ -79,7 +99,26 @@ The system will automatically:
 - Aggregate hourly data and cache it in Redis
 - Make data available through the web dashboard
 
-### 4. Web Interfaces
+### 5. Generate Historical Test Data
+
+For testing and demonstration purposes, you can generate one year of historical data for any sensor:
+
+```bash
+# Make the script executable
+chmod +x insert-one-year-data.sh
+
+# Insert one year of historical data for a specific sensor
+./insert-one-year-data.sh sensor_001
+```
+
+This script will:
+
+- Insert data points for every second over the past year
+- Generate random energy values between 5-15 units
+- Automatically refresh the hourly aggregated data
+- Provide a complete dataset for dashboard visualization
+
+### 6. Web Interfaces
 
 - **Kafka UI**: Web-based interface for monitoring Kafka topics, schemas, connectors, and cluster health. Access at http://localhost:8080
 - **Web Client**: Interactive dashboard for visualizing sensor data from the last 24 hours with performance metrics. Access at http://localhost
@@ -94,8 +133,5 @@ This section outlines upcoming integrations and improvements for the IoT data pr
 
 - **Prometheus & Grafana**: Integrate comprehensive monitoring and visualization for system metrics
 - **Data Retention Policy**: Implement automatic cleanup for `rawdata` TimescaleDB table (drop data older than 1 day)
-- **Stream Processing**: Simplify `db-redis-streams` logic and improve cached data format for better performance
-- **API Enhancements**: Update `web-server` API responses with improved data structures and error handling
-- **Component Library**: Integrate a modern UI component library for `web-client` to enhance responsiveness and user experience
 - **Documentation**: Add a `README.md` file for each service, explaining its implementation and purpose
 - **Kubernetes**: Migrate to Kubernetes for better scalability and container orchestration

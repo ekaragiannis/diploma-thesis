@@ -2,9 +2,17 @@
   "type": "record",
   "name": "EnergyData",
   "namespace": "com.example.avro",
+  "doc": "Represents the total energy consumption for a specific hour of the day.",
   "fields": [
-    {"name": "sensor", "type": "string"},
-    {"name": "energy", "type": "double"},
-    {"name": "hour", "type": "string"}
+    {
+      "name": "energy_total",
+      "type": "double",
+      "doc": "Total energy consumption in kilowatt-hours (kWh) for the given hour."
+    },
+    {
+      "name": "hour_bucket",
+      "type": "string",
+      "doc": "Timestamp string in UTC marking the start of the hour bucket (e.g., '2024-06-01T14:00:00Z')."
+    }
   ]
-} 
+}

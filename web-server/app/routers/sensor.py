@@ -1,34 +1,25 @@
-from fastapi import APIRouter, HTTPException
-from pydantic import BaseModel
+from fastapi import APIRouter
 from app.services.db_service import fetch_sensor_names
+from app.models import SensorResponse, ErrorResponse
 
 router = APIRouter(prefix="/sensors", tags=["Sensors"])
 
 
-class SensorResponse(BaseModel):
-    sensors: list[str]
-
-
-class ErrorResponse(BaseModel):
-    detail: str
-
-
-@router.get("", response_model=SensorResponse, responses={500: {"model": ErrorResponse}})
+@router.get(
+    "", response_model=SensorResponse, responses={500: {"model": ErrorResponse}}
+)
 async def get_sensor_names():
     """
-    Get all available sensor names from the database.
+    Retrieve list of all available sensors.
+
+    Fetches the complete list of sensor identifiers that are available
+    in the system for data retrieval.
 
     Returns:
-        SensorResponse: A response containing a list of sensor names.
-            {
-                "sensors": ["sensor1", "sensor2", "sensor3", ...]
-            }
+        SensorResponse containing list of all sensor identifiers
 
     Raises:
-        HTTPException: If there's an error fetching sensor names from the database.
+        HTTPException 500: Database connection or query error
     """
-    try:
-        sensor_names = fetch_sensor_names()
-        return {"sensors": sensor_names}
-    except Exception as e:
-        raise HTTPException(status_code=500, detail=str(e))
+    sensor_names = fetch_sensor_names()
+    return SensorResponse(sensors=sensor_names)
